@@ -12,42 +12,26 @@ def main():
     card_data = json.load(open('cards.collectible.json'))
     
     # Connect to our database
-    db = sqlite3.connect('game.sqlite');
-
+    db = sqlite3.connect('game.sqlite')
+    db.execute('DELETE FROM cards')
+    
     # Cycle through all the objects in the collection
     for card in card_data:
-        # Check if an object is a card. default to it is for our purposes
-        # then attempt to prove that it isn't a card.
-        is_a_card = True
-    
-        # Look for the following properties to check if it is a card.
-        # if 'rarity' not in card.keys(): is_a_card = False
-        # if 'id' not in card.keys(): is_a_card = False
-        # if 'set' not in card.keys(): is_a_card = False
-        # if 'flavor' not in card.keys(): is_a_card = False
-        if "HERO" in card['id']: is_a_card = False
-        
-        # If it is determined to be a card print out data about the card...
-        if is_a_card:
-            # Start off by incrementing our card counter
+        if "HERO" not in card['id']:
             card_count+=1
-            # Print out it's info
-            print "     Card Name: " + card['name']
-            print "   Card Rarity: " + card['rarity']
-            print "       Card ID: " + card['id']
-            print "     Card Set : " + card['set']
-            
             # Determine if it's a neutral card or a class card
             if 'playerClass' not in card.keys():
-                print "   Card Class : NEUTRAL"
+                card_class = "NEUTRAL"
             else:
-                print "   Card Class : " + card['playerClass']
-                
-            # Print a blank line for clarity
-            print ""
-    print "Cards found: " + str(card_count)
-    db.close()
+                card_class = card['playerClass']
 
+            columns = '"' + card['id'] + '", "' + card['rarity'] + '", "' + card['set'] + '", "' + card_class + '", "' + card['name'] + '"'
+            db.execute('INSERT INTO cards VALUES(' + columns + ' );')
+            
+    db.commit()        
+    db.close()
+    print card_count + " cards were written to the database."
+    
 # Boilerplate python
 if __name__ == '__main__':
     main()
