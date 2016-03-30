@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 
-# Use the built in json library
+# Use the built in json and sqlite library
 import json
 import sqlite3
 
@@ -30,7 +30,7 @@ def main():
             
     db.commit()        
     db.close()
-    print card_count + " cards were written to the database."
+    print str(card_count) + ' cards were written to the database.'
     
 # Boilerplate python
 if __name__ == '__main__':
