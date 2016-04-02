@@ -24,9 +24,8 @@ def main():
                 card_class = "NEUTRAL"
             else:
                 card_class = card['playerClass']
-
-            columns = '"' + card['id'] + '", "' + card['rarity'] + '", "' + card['set'] + '", "' + card_class + '", "' + card['name'] + '"'
-            db.execute('INSERT INTO cards VALUES(' + columns + ' );')
+            new_card = ( card['id'], card['rarity'],  card['set'], card_class, card['name'])
+            db.execute('INSERT INTO cards VALUES(?,?,?,?,?)', new_card)
             
     db.commit()        
     db.close()
