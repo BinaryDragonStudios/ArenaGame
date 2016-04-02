@@ -1,9 +1,13 @@
 #!/usr/bin/env python
 
 import sys
+import sqlite3
 
 def main():
     
+    # Connect to our database
+    db = sqlite3.connect('game.sqlite')
+
     card_class = 'mage'
     
     # Open CSV file
