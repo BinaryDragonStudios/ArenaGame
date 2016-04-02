@@ -5,50 +5,74 @@ import sqlite3
 
 def main():
     
-    # Connect to our database
+    # Connect to our database and create scores table if it doesn't exist
     db = sqlite3.connect('game.sqlite')
-
-    card_class = 'mage'
+    c = db.cursor()
+    query = "CREATE TABLE IF NOT EXISTS scores('card_game_id', 'draft_class', 'score', 'modifier', 'score_version','pick_counter','offer_counter', UNIQUE(card_game_id,draft_class))"
+    c.execute(query)
     
-    # Open CSV file
-    csv_file = open('/root/code/' + card_class + '.csv', 'rb')
+    score_version = '20150703' # Maybe make this a parameter?
+    lang = 'en' # Maybe make this a parameter?
+    select_card_id_query = 'SELECT card_game_id FROM cards WHERE card_name_' + lang + ' = ? LIMIT 1'
     
-    with csv_file:
-        # List of cards and their scores (alternating)
-        score_list = []
+    class_list = ['druid', 'hunter', 'mage', 'paladin', 'priest', 'rogue', 'shaman', 'warlock', 'warrior']
+    
+    for draft_class in class_list:
+    
+        # Open CSV file
+        csv_file = open('scores/' + draft_class + '.csv', 'rb')
         
-        for line in csv_file:
-            # All rows with relevant data starts with ; or  -
-            if line[0] in [';','-']:
-                for content in line.split(';'):
-                    content = content.strip()
-                    # Leave out content that's not a card or a score
-                    if content not in ['', '---lower half---', '---upper half---', '(empty)']:
-                        score_list.append(content)
+        with csv_file:
+            # Boolean keeping track of the value (card name or score); first value is always card name
+            is_card_name = True
+            
+            # Card counter
+            card_count = 0
+            
+            for line in csv_file:
+                # All rows with relevant data starts with ; or  -
+                if line[0] in [';','-']:
+                
+                    # Split the comma seperated data into a list and cycle through it
+                    for content in line.split(';'):
                         
-        csv_file.close()
-        
-        # Boolean keeping track of the value (card name or score); first is always card name
-        is_card_name = True
-        # Card counter
-        card_count = 0
-        
-        # This is an extra loop for clarity, the logic should probably be moved up to the other one
-        for value in score_list:
-            if is_card_name:
-                print 'Card name: ' + value
-                card_count+=1
-            else:
-                modifier = value.count('*')
-                print 'Card score: ' + value.strip('\*')
-                print 'Modifier: ' + str(modifier)
-                print ''
-
-            # Toggle is_card_name
-            is_card_name = not is_card_name            
-        
-        print 'Number of cards processed: ' + str(card_count)
-        
+                        # Trim white spaces
+                        value = content.strip()
+                        
+                        # Skip content that is not a card or a score
+                        if value not in ['', '---lower half---', '---upper half---', '(empty)']:
+                        
+                            # If the value is the card name: get the card ID from the cards table
+                            if is_card_name:
+                                c.execute(select_card_id_query, (value,))
+                                row = c.fetchone()
+                                card_game_id = row[0]
+                        
+                            # If the value is not the card name, it's the associated score
+                            else:
+                            
+                                # The score may have a modifier, indicated by a *, we store them seperatly
+                                modifier = value.count('*')
+                                score = value.strip('\*')
+                                
+                                # Now that we have all available card data, insert them into the database
+                                card_data = (card_game_id, draft_class, score, modifier, score_version, None, None)
+                                c.execute('REPLACE INTO scores VALUES(?,?,?,?,?,?,?)', card_data)
+                                card_count+=1
+                                
+                            # Toggle is_card_name
+                            is_card_name = not is_card_name            
+                        
+        print 'Number of cards processed for ' + draft_class + ': ' + str(card_count)
+        csv_file.close()                
+    
+    print ''
+    c.execute('SELECT count(*) from scores')
+    row = c.fetchone()
+    print 'Number of cards in scores table: ' + str(row[0])
+    db.commit()        
+    db.close()
+       
 # Boilerplate python
 if __name__ == '__main__':
     main()

@@ -11,21 +11,26 @@ def main():
     # Load all json data into a collection
     card_data = json.load(open('cards.collectible.json'))
     
-    # Connect to our database
+    # Connect to our database and creat table if it doesn't exist
     db = sqlite3.connect('game.sqlite')
-    db.execute('DELETE FROM cards')
+    c = db.cursor()
+    query = "CREATE TABLE IF NOT EXISTS cards('card_game_id', 'rarity', 'set', 'class', 'card_name_en',UNIQUE(card_game_id));"
+    c.execute(query)
     
     # Cycle through all the objects in the collection
     for card in card_data:
         if "HERO" not in card['id']:
             card_count+=1
+            
             # Determine if it's a neutral card or a class card
             if 'playerClass' not in card.keys():
                 card_class = "NEUTRAL"
             else:
                 card_class = card['playerClass']
+            
+            # Insert into database
             new_card = ( card['id'], card['rarity'],  card['set'], card_class, card['name'])
-            db.execute('INSERT INTO cards VALUES(?,?,?,?,?)', new_card)
+            c.execute('REPLACE INTO cards VALUES(?,?,?,?,?)', new_card)
             
     db.commit()        
     db.close()
