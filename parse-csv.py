@@ -12,8 +12,8 @@ def main():
     c.execute(query)
     
     score_version = '20150703' # Maybe make this a parameter?
-    lang = 'en' # Maybe make this a parameter?
-    select_card_id_query = 'SELECT card_game_id FROM cards WHERE card_name_' + lang + ' = ? LIMIT 1'
+
+    select_card_id_query = 'SELECT card_game_id FROM cards WHERE card_name_en = ? LIMIT 1'
     
     class_list = ['druid', 'hunter', 'mage', 'paladin', 'priest', 'rogue', 'shaman', 'warlock', 'warrior']
     
@@ -25,6 +25,9 @@ def main():
         with csv_file:
             # Boolean keeping track of the value (card name or score); first value is always card name
             is_card_name = True
+            
+            # Keep track of the cards processed (by card_game_id)
+            processed = []
             
             # Card counter
             card_count = 0
@@ -46,9 +49,10 @@ def main():
                             if is_card_name:
                                 c.execute(select_card_id_query, (value,))
                                 row = c.fetchone()
-                                card_game_id = row[0]
-                        
-                            # If the value is not the card name, it's the associated score
+                                card_game_id = row[0]                        
+                                processed.append(card_game_id)
+
+                                # If the value is not the card name, it's the associated score
                             else:
                             
                                 # The score may have a modifier, indicated by a *, we store them seperatly
@@ -63,14 +67,26 @@ def main():
                             # Toggle is_card_name
                             is_card_name = not is_card_name            
                         
-        print 'Number of cards processed for ' + draft_class + ': ' + str(card_count)
+        # Discover duplicates
+        dupes = set([x for x in processed if processed.count(x) > 1])
+        print 'Number of cards processed for ' + draft_class + ': ' + str(card_count - len(dupes))
+
+        if len(dupes) > 0:
+            print 'Duplicates: ' + str(dupes)
+       
         csv_file.close()                
     
     print ''
     c.execute('SELECT count(*) from scores')
     row = c.fetchone()
     print 'Number of cards in scores table: ' + str(row[0])
-    db.commit()        
+    
+    try:
+        db.commit()
+    except sqlite3.Error as e:
+        print "An error occurred: ", e.args[0]
+        db.rollback()
+        
     db.close()
        
 # Boilerplate python
