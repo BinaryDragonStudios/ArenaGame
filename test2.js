@@ -1,8 +1,15 @@
 // basic script to check and see if express & swig are working
 
+// required libs
+
+var sqlite3 = require('sqlite3').verbose()
 var express = require('express')
+var swig = require('swig')
+
+// main objects
+
+var db = new sqlite3.Database('game.sqlite')
 var app = express()
-var swig = require('swig') 
 
 app.engine('html', swig.renderFile)
 app.set('view engine', 'html')
@@ -12,25 +19,40 @@ swig.setDefaults({ cache: false });
 
 
 function debug_notice(message){
-	console.log('NOTICE ' + message)
+    console.log('NOTICE ' + message)
 }
 
 app.get('/', function (req, res) {
-	debug_notice('request: /')
-	res.send('Hello World')
+    debug_notice('request: /')
+    res.send('Hello World')
 })
 
 app.get('/new', function (req, res) {
-	debug_notice('request: /new')
-	language = {
-		head_title: 'Title Test',
-		h1_title: 'h1 test'
-	}
-	res.render(
-		'basic.html',
-		language
-	)
+    debug_notice('request: /new')
+    language = {
+        head_title: 'Title Test',
+        h1_title: 'h1 test'
+    }
+    res.render(
+        'basic.html',
+        language
+    )
 })
- 
+
+app.get('/query', function(req, res) {
+    var output = "<table>";
+    db.serialize(function() {
+        db.each("SELECT card_game_id, card_name_en  FROM cards", function(err, row) {
+            output = output + "<tr><td>" + row.card_game_id + "<td>" + row.card_name_en;
+//            console.log(output);
+//            posts.push({title: row.post_title, date: row.post_date, text: row.post_text})
+        }, function() {
+        // All done fetching records, render response
+        //    res.render("dynamic", {title: "Dynamic", posts: posts})
+            res.send(output);
+        })
+    })
+})
+
 app.listen(80)
 debug_notice('app started on localhost:80')
