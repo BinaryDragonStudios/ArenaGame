@@ -44,11 +44,7 @@ app.get('/query', function(req, res) {
     db.serialize(function() {
         db.each("SELECT card_game_id, card_name_en  FROM cards", function(err, row) {
             output = output + "<tr><td>" + row.card_game_id + "<td>" + row.card_name_en;
-//            console.log(output);
-//            posts.push({title: row.post_title, date: row.post_date, text: row.post_text})
         }, function() {
-        // All done fetching records, render response
-        //    res.render("dynamic", {title: "Dynamic", posts: posts})
             res.send(output);
         })
     })
