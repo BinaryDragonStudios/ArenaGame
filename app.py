@@ -6,11 +6,27 @@
 import sys
 import sqlite3
 from flask import Flask, jsonify
-from random import randint
+from random import randint, choice
+
 ################################################################################
 # Objects
 ################################################################################
 app = Flask(__name__)
+
+################################################################################
+# Global Variables
+################################################################################
+classes = [
+    'druid',
+    'hunter',
+    'mage',
+    'paladin',
+    'priest',
+    'rogue',
+    'shaman',
+    'warrior',
+    'warlock'
+]
 
 ################################################################################
 # Helper Functions
@@ -49,28 +65,41 @@ def set():
 
 @app.route("/draft")
 def draft():
-    output = "<ol>"
+    # Establish db connection
+    db = sqlite3.connect('game.sqlite')
+    c = db.cursor()
+
+    # Buffer page output
+    output = "<table>"
+    random_class = choice(classes)
+
+    # Define base query
+    sql  = """
+        SELECT scores.card_game_id
+        FROM cards, scores
+        WHERE scores.card_game_id = cards.card_game_id
+        AND scores.draft_class = ?
+        AND ((cards.rarity = ?) OR (cards.rarity = ?))
+        ORDER BY RANDOM()
+        LIMIT 3
+    """
+    # Draft 30 sets of 3 cards
     for i in range(1,31):
-        output += "<li>" + select_rarity(i in [1,10,20,30])
+        output += "<tr>"
+        pick_rarity = select_rarity(i in [1,10,20,30])
+        rarity_2 = pick_rarity
+        if pick_rarity == "COMMON": rarity_2 = "FREE"
+        for row in c.execute(sql, [random_class, pick_rarity, rarity_2]):
+            output += '<td><img src="' + card_image_url(row[0]) + '">'
+        output += "</tr>"
+
     return output
+
 
 @app.route("/classrank/<class_lookup>")
 def classrank(class_lookup):
     db = sqlite3.connect('game.sqlite')
     c = db.cursor()
-    # define acceptable classes
-    classes = [
-        'druid',
-        'hunter',
-        'mage',
-        'paladin',
-        'priest',
-        'rogue',
-        'shaman',
-        'warrior',
-        'warlock'
-    ]
-
     # Check if class_lookup provided is valid
     if class_lookup not in classes:
         return "Invalid class specified"
