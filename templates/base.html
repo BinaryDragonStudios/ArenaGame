@@ -1,0 +1,39 @@
+<!doctype html>
+<head>
+<title>{{ head_title }}</title>
+<script src="https://ajax.googleapis.com/ajax/libs/jquery/1.12.2/jquery.min.js"></script>
+<link href='https://fonts.googleapis.com/css?family=Alegreya' rel='stylesheet' type='text/css'>
+<style>
+* {
+    font-family: 'Alegreya', serif;
+}
+
+h1, h2 {
+    text-align: center;
+}
+
+body {
+    background-color: #ccc;
+    width: 1000px;
+    margin: auto;
+}
+
+table {
+    margin: auto;
+}
+
+a {
+    color: blue;
+    text-decoration: none;
+}
+</style>
+{% block script %}{% endblock %}
+</head>
+<body>
+<h1><a href="./">Arena Game</a></h1>
+<h2><a href="draft">New Game</a> | <a href="leaderboards">Leaderboards</a></h2>
+<!-- begin content -->
+{% block content %}{% endblock %}
+<!-- end content -->
+</body>
+</html>

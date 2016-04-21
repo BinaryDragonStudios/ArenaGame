@@ -5,7 +5,7 @@
 ################################################################################
 import sys
 import sqlite3
-from flask import Flask, jsonify
+from flask import Flask, jsonify, render_template
 from random import randint, choice
 
 ################################################################################
@@ -41,17 +41,12 @@ def select_rarity(rare_gauranteed):
     if (roll >= 85 or rare_gauranteed == True): return "RARE"
     return "COMMON"
 
-def draft_cards(draft_class, draft_rarity):
-    return False;
-
 ################################################################################
 # Routes
 ################################################################################
 @app.route("/")
 def hello():
-    output = "<h1>Arena Game</h1>"
-    output += "<ul><li>Draft Sim</li><li>Current Card Set</li></ul>"
-    return output
+    return render_template('index.html')
 
 @app.route("/set")
 def set():
@@ -70,8 +65,8 @@ def draft():
     c = db.cursor()
 
     # Buffer page output
-    output = "<table>"
     random_class = choice(classes)
+    packs = []
 
     # Define base query
     sql  = """
@@ -85,15 +80,18 @@ def draft():
     """
     # Draft 30 sets of 3 cards
     for i in range(1,31):
-        output += "<tr>"
         pick_rarity = select_rarity(i in [1,10,20,30])
         rarity_2 = pick_rarity
         if pick_rarity == "COMMON": rarity_2 = "FREE"
+        cards = []
         for row in c.execute(sql, [random_class, pick_rarity, rarity_2]):
-            output += '<td><img src="' + card_image_url(row[0]) + '">'
-        output += "</tr>"
+            cards.append(row[0])
+        packs.append(cards)
+    return render_template("draft.html", head_title ='Draft Game', draft=packs)
 
-    return output
+@app.route("/leaderboards")
+def leaderboards():
+    return render_template('leaderboards.html')
 
 
 @app.route("/classrank/<class_lookup>")

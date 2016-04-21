@@ -1,0 +1,28 @@
+{% extends "base.html" %}
+{% block script %}
+<script>
+
+$(document).ready(function () {
+    $("tr").hide(0);
+    $("tr:first").show(150);
+    $(".pack_pick").click(function(){
+        $(this).closest("tr").hide(0)
+        $(this).closest("tr").next("tr").show(150)
+    })
+})
+</script>
+{% endblock %}
+{% block content %}
+<table>
+{% for pack in draft %}
+<tr>
+    <td><img class="pack_pick" src="http://wow.zamimg.com/images/hearthstone/cards/enus/original/{{ pack[0] }}.png">
+    <td><img class="pack_pick" src="http://wow.zamimg.com/images/hearthstone/cards/enus/original/{{ pack[1] }}.png">
+    <td><img class="pack_pick" src="http://wow.zamimg.com/images/hearthstone/cards/enus/original/{{ pack[2] }}.png">
+</tr>
+{% endfor %}
+<tr>
+    <td colspan="3">GAME OVER</td>
+<tr>
+</table>
+{% endblock %}
