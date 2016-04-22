@@ -1,28 +1,162 @@
 {% extends "base.html" %}
+
+{% block style %}
+<style>
+img {
+    cursor: hand;
+    cursor: pointer;
+}
+
+#draft_container {
+    background-image: url(https://i.gyazo.com/a5df51995de49831c94eff0b021ac2bb.png);
+    background-repeat: no-repeat;
+    margin: auto;
+    width: 1092px;
+    height: 724px;
+    z-index: -1;
+    display: none;
+}
+
+h2.arena_text {
+    color: white;
+    text-shadow:
+          2px 2px 0 #222,
+        -1px -1px 0 #000,  
+         1px -1px 0 #000,
+         -1px 1px 0 #000,
+          1px 1px 0 #000;
+    font-weight: normal;
+    width: 300px;
+    font-size: 1.2em;
+}
+
+h2.arena_text.drafting {
+    display: block;
+    margin: auto;
+    padding-top: 16px;
+}
+
+h2.arena_text#choose {
+    display: inline-block;
+    vertical-align: top;
+    position: relative;
+    top: 97px;
+    left: 205px;
+    align: center;
+}
+
+.hero {
+    display: inline-block;
+    position: relative;
+    vertical-align: top;
+    width: 111px;
+    margin: 20px 0 0 70px;
+}
+
+.hero .portrait {
+    background-position: {{ -115 + x_offset }}px {{ -85 + y_offset }}px;
+    background-image: url({{ hero_url }});
+    background-repeat: no-repeat;
+    height: 85px;
+    width: 72px;
+    position: relative;
+    top: 21px;
+    left: 20px;
+    z-index: 2;
+    border-top-left-radius: 20px;
+    border-top-right-radius: 20px;
+}
+
+.hero .portrait ~ .frame {
+    background-image: url("http://us.battle.net/hearthstone/static/images/game-guide/heroes/hero-frame.png");
+    background-repeat: no-repeat;
+    height: 127px;
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 111px;
+    z-index: 3;
+}
+
+.pack_pick {
+    width: 280px;
+    margin-top: 30px;
+}
+
+.pack_pick:hover {
+    padding: 3px 0 0 2px;
+    margin: 0 -2px -3px 0;
+    z-index: 10;
+}
+</style>
+{% endblock %}
 {% block script %}
 <script>
 
 $(document).ready(function () {
+    var card_on_press = function(){
+        // immediately unbind the click event disabling more picks
+ //       $(".pack_pick").click(function(){});
+        count +=1;
+        // if we are still making picks
+        if(count <= 30) {
+            // update counter
+            $("#count").html(count.toString());
+            // hide/make sure all rows are hidden 
+            $("tr.pack_row:nth-child(" + (count-1).toString() + ")").hide(0, function(){
+                // show only the next row
+                $("tr.pack_row:nth-child(" + count.toString() + ")").show(300, function(){
+                    // once row is visible rebind card_on_press function
+                    // $(".pack_pick").click = card_on_press
+                })
+            })
+        } else {
+            // we are done making picks, game over
+            $(".pack_row").hide(0, function(){
+                $('#choose').html("GAME OVER")
+            })
+        }
+    }
+    var count = 1;
+    $("#draft_container").show(0);
     $("tr").hide(0);
-    $("tr:first").show(150);
+    $("tr:first").show(100);
+    $(".pack_pick").on("click", function() {
+        card_on_press();
+    });
+    /*
     $(".pack_pick").click(function(){
-        $(this).closest("tr").hide(0)
-        $(this).closest("tr").next("tr").show(150)
+        $(this).closest("tr").hide(0, function () {
+            $(this).closest("tr").next("tr").show(300);
+        });
+        count += 1;
+        if(count == 31) {
+            document.getElementById('choose').innerHTML="GAME OVER"
+        } else {
+            document.getElementById('count').innerHTML=count;
+        }
     })
+    */
 })
 </script>
 {% endblock %}
+
 {% block content %}
-<table>
-{% for pack in draft %}
-<tr>
-    <td><img class="pack_pick" src="http://wow.zamimg.com/images/hearthstone/cards/enus/original/{{ pack[0] }}.png">
-    <td><img class="pack_pick" src="http://wow.zamimg.com/images/hearthstone/cards/enus/original/{{ pack[1] }}.png">
-    <td><img class="pack_pick" src="http://wow.zamimg.com/images/hearthstone/cards/enus/original/{{ pack[2] }}.png">
-</tr>
-{% endfor %}
-<tr>
-    <td colspan="3">GAME OVER</td>
-<tr>
-</table>
+<div id="draft_container">
+    <h2 class="arena_text drafting">Now drafting: {{ hero_class }}</h2>
+    <div class="hero">
+        <div class="portrait"></div>
+        <div class="frame"></div>
+    </div>
+    <h2 class="arena_text" id="choose">Choose a card ( <span id="count">1</span> / 30 )</h2>
+    <table id="pack_table">
+    {% for pack in draft %}
+    <tr class="pack_row">
+        <td><img class="pack_pick" src="http://wow.zamimg.com/images/hearthstone/cards/enus/original/{{ pack[0] }}.png">
+        <td><img class="pack_pick" src="http://wow.zamimg.com/images/hearthstone/cards/enus/original/{{ pack[1] }}.png">
+        <td><img class="pack_pick" src="http://wow.zamimg.com/images/hearthstone/cards/enus/original/{{ pack[2] }}.png">
+    </tr>
+    {% endfor %}
+    </table>
+ </div>
 {% endblock %}

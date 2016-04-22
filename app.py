@@ -41,6 +41,41 @@ def select_rarity(rare_gauranteed):
     if (roll >= 85 or rare_gauranteed == True): return "RARE"
     return "COMMON"
 
+def get_url(hero):
+    url = 'http://wow.zamimg.com/images/hearthstone/cards/enus/original/HERO_'
+    x_offset = 0
+    y_offset = 0
+    if hero == 'warrior':
+        index = '01'
+        x_offset = -2
+    elif hero == 'shaman':
+        index = '02'
+        x_offset = -15
+    elif hero == 'rogue':
+        index = '03'
+        y_offset = -5
+    elif hero == 'paladin':
+        index = '04'
+        x_offset = -5
+        y_offset = 7
+    elif hero == 'hunter':
+        index = '05'
+        y_offset = 5
+    elif hero == 'druid':
+        index = '06'
+        x_offset = -13
+        y_offset = -5
+    elif hero == 'warlock':
+        index = '07'
+        x_offset = 2
+    elif hero == 'mage':
+        index = '08'
+    elif hero == 'priest':
+        index = '09'
+        x_offset = 8;
+    
+    return [url+index+'.png', x_offset, y_offset]
+        
 ################################################################################
 # Routes
 ################################################################################
@@ -66,6 +101,7 @@ def draft():
 
     # Buffer page output
     random_class = choice(classes)
+    hero = get_url(random_class)
     packs = []
 
     # Define base query
@@ -87,7 +123,7 @@ def draft():
         for row in c.execute(sql, [random_class, pick_rarity, rarity_2]):
             cards.append(row[0])
         packs.append(cards)
-    return render_template("draft.html", head_title ='Draft Game', draft=packs)
+    return render_template("draft.html", head_title ='Draft Game', hero_class=random_class.title(), hero_url=hero[0], x_offset=hero[1], y_offset=hero[2], draft=packs)
 
 @app.route("/leaderboards")
 def leaderboards():
