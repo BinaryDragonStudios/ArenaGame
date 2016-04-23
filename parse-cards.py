@@ -14,7 +14,7 @@ def main():
     # Connect to our database and creat table if it doesn't exist
     db = sqlite3.connect('game.sqlite')
     c = db.cursor()
-    query = "CREATE TABLE IF NOT EXISTS cards('card_game_id', 'rarity', 'set', 'class', 'card_name_en',UNIQUE(card_game_id));"
+    query = "CREATE TABLE IF NOT EXISTS cards('card_game_id', 'cost', 'rarity', 'set', 'class', 'card_name_en', UNIQUE(card_game_id));"
     c.execute(query)
     
     # Cycle through all the objects in the collection
@@ -29,8 +29,8 @@ def main():
                 card_class = card['playerClass']
             
             # Insert into database
-            new_card = ( card['id'], card['rarity'],  card['set'], card_class, card['name'])
-            c.execute('REPLACE INTO cards VALUES(?,?,?,?,?)', new_card)
+            new_card = ( card['id'], card['cost'], card['rarity'],  card['set'], card_class, card['name'] )
+            c.execute('REPLACE INTO cards VALUES(?,?,?,?,?,?)', new_card)
             
     db.commit()        
     db.close()

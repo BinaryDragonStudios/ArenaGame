@@ -8,16 +8,31 @@ img {
 }
 
 #draft_container {
+    margin: auto;
+    width: 1350px;
+}
+
+#pick_container {
+    display: inline-block;
+    margin: auto;
     background-image: url(https://i.gyazo.com/a5df51995de49831c94eff0b021ac2bb.png);
     background-repeat: no-repeat;
-    margin: auto;
+    background-size: 1092px 724px;
     width: 1092px;
     height: 724px;
     z-index: -1;
-    display: none;
 }
 
-h2.arena_text {
+#list_container {
+    display: inline-block;
+    margin-left: 5px;
+    margin-top: -11px;
+    z-index: -1;
+    width: 220px;
+    position: absolute;
+}
+
+.arena_text {
     color: white;
     text-shadow:
           2px 2px 0 #222,
@@ -30,13 +45,13 @@ h2.arena_text {
     font-size: 1.2em;
 }
 
-h2.arena_text.drafting {
+.arena_text.drafting {
     display: block;
     margin: auto;
     padding-top: 16px;
 }
 
-h2.arena_text#choose {
+.arena_text#choose {
     display: inline-block;
     vertical-align: top;
     position: relative;
@@ -54,7 +69,7 @@ h2.arena_text#choose {
 }
 
 .hero .portrait {
-    background-position: {{ -115 + x_offset }}px {{ -85 + y_offset }}px;
+    background-position: {{ x_offset }}px {{ y_offset }}px;
     background-image: url({{ hero_url }});
     background-repeat: no-repeat;
     height: 85px;
@@ -88,17 +103,84 @@ h2.arena_text#choose {
     margin: 0 -2px -3px 0;
     z-index: 10;
 }
+
+ul#draft_list {
+    list-style-position: inside;
+    list-style: none;
+    font-size: 0.8em;
+    padding: 0;
+    width: 200px;
+}
+
+ul#draft_list li {
+    background-color: #726358;
+    color: #fff;
+    font-weight: normal;
+    border: 1px solid #222;
+    border-radius: 3px;
+    padding-top: 1px;
+}
+
+ul#draft_list li.warrior {background-color: #702116}
+ul#draft_list li.shaman {background-color: #292f55}
+ul#draft_list li.rogue {background-color: #3d3e42}
+ul#draft_list li.paladin {background-color: #c07b23}
+ul#draft_list li.hunter {background-color: #246521}
+ul#draft_list li.druid {background-color: #6e411f}
+ul#draft_list li.warlock {background-color: #503458}
+ul#draft_list li.mage {background-color: #596896}
+ul#draft_list li.priest {background-color: #b8bec1}
+
+ul#draft_list li:before {
+    content: '';
+    display: inline-block;
+    height: 24px;
+    width: 24px;
+    background-image: url(https://i.gyazo.com/861716aa6b4f16da952cab43c725f1e0.png);
+    background-size:contain; 
+    background-repeat:no-repeat;
+    margin-top: 2px;
+    vertical-align: middle;
+}
+
+span.card_cost {
+    margin-left: -16px;
+}
+
+span.card_cost.offset {
+    margin-left: -20px;
+}
+
+span.card_name {
+    margin-left: 13px;
+}
+
+span.card_name.neutral { color: #fff; }
+span.card_name.rare { color: #418eff; }
+span.card_name.epic { color: #d155f9; }
+span.card_name.legendary { color: #ffb024; }
+
 </style>
 {% endblock %}
 {% block script %}
 <script>
 
 $(document).ready(function () {
-    var card_on_press = function(){
+    var card_on_press = function(pick, pick_array){
         // immediately unbind the click event disabling more picks
  //       $(".pack_pick").click(function(){});
         count +=1;
-        // if we are still making picks
+        $("ul#draft_list").empty();
+        var content = '';
+        var data = [ parseInt(pick.attr('data-cost'), 10), count, pick.attr('data-id'), pick.attr('data-name'), pick.attr('data-class').toLowerCase(), pick.attr('data-rarity').toLowerCase() ]
+        pick_array.push(data);
+        pick_array.sort();
+        $.each(pick_array, function(i, val) {
+            var offset = '';
+            if(pick_array[i][0].toString().length > 2) {offset = 'offset'};
+            content += '<li class="' + pick_array[i][4] + '">' + '<span class="card_cost ' + offset + '">' + pick_array[i][0] + '</span><span class="card_name ' + pick_array[i][5]+ '">' + pick_array[i][3] + '</span>';
+        })
+        $("ul#draft_list").append(content);        // if we are still making picks
         if(count <= 30) {
             // update counter
             $("#count").html(count.toString());
@@ -116,13 +198,19 @@ $(document).ready(function () {
                 $('#choose').html("GAME OVER")
             })
         }
+
     }
     var count = 1;
+    var pick_array = [];
+    var pick_numbers = [];
     $("#draft_container").show(0);
     $("tr").hide(0);
     $("tr:first").show(100);
     $(".pack_pick").on("click", function() {
-        card_on_press();
+        if($.inArray($(this).attr('data-pick-number'), pick_numbers ) == -1) {
+            pick_numbers.push($(this).attr('data-pick-number'))
+            card_on_press($(this),pick_array);
+        }
     });
     /*
     $(".pack_pick").click(function(){
@@ -143,20 +231,49 @@ $(document).ready(function () {
 
 {% block content %}
 <div id="draft_container">
-    <h2 class="arena_text drafting">Now drafting: {{ hero_class }}</h2>
-    <div class="hero">
-        <div class="portrait"></div>
-        <div class="frame"></div>
+    <div id="pick_container">
+        <h2 class="arena_text drafting">Now drafting: {{ hero_class }}</h2>
+        <div class="hero">
+            <div class="portrait"></div>
+            <div class="frame"></div>
+        </div>
+        <h2 class="arena_text" id="choose">Choose a card ( <span id="count">1</span> / 30 )</h2>
+        <table id="pack_table">
+        {% for pack in draft %}
+            <tr class="pack_row">
+                <td><img 
+                    class="pack_pick" 
+                    data-pick-number={{ loop.index }} 
+                    data-id="{{ pack[0][0] }}" 
+                    data-name="{{ pack[0][1] }}" 
+                    data-cost="{{ pack[0][2] }}" 
+                    data-class="{{ pack[0][3] }}" 
+                    data-rarity="{{ pack[0][4] }}" 
+                    src="http://wow.zamimg.com/images/hearthstone/cards/enus/original/{{ pack[0][0] }}.png">
+                <td><img 
+                    class="pack_pick" 
+                    data-pick-number={{ loop.index }} 
+                    data-id="{{ pack[2][0] }}" 
+                    data-name="{{ pack[1][1] }}" 
+                    data-cost="{{ pack[1][2] }}" 
+                    data-class="{{ pack[1][3] }}" 
+                    data-rarity="{{ pack[1][4] }}" 
+                    src="http://wow.zamimg.com/images/hearthstone/cards/enus/original/{{ pack[1][0] }}.png">
+                <td><img 
+                    class="pack_pick" 
+                    data-pick-number={{ loop.index }} 
+                    data-id="{{ pack[2][0] }}" 
+                    data-name="{{ pack[2][1] }}" 
+                    data-cost="{{ pack[2][2] }}" 
+                    data-class="{{ pack[2][3] }}" 
+                    data-rarity="{{ pack[2][4] }}" 
+                    src="http://wow.zamimg.com/images/hearthstone/cards/enus/original/{{ pack[2][0] }}.png">
+            </tr>
+        {% endfor %}
+        </table>
     </div>
-    <h2 class="arena_text" id="choose">Choose a card ( <span id="count">1</span> / 30 )</h2>
-    <table id="pack_table">
-    {% for pack in draft %}
-    <tr class="pack_row">
-        <td><img class="pack_pick" src="http://wow.zamimg.com/images/hearthstone/cards/enus/original/{{ pack[0] }}.png">
-        <td><img class="pack_pick" src="http://wow.zamimg.com/images/hearthstone/cards/enus/original/{{ pack[1] }}.png">
-        <td><img class="pack_pick" src="http://wow.zamimg.com/images/hearthstone/cards/enus/original/{{ pack[2] }}.png">
-    </tr>
-    {% endfor %}
-    </table>
+    <div id="list_container">
+        <ul class="arena_text" id="draft_list"></ul>
+    </div>
  </div>
 {% endblock %}
