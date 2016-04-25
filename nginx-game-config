@@ -1,0 +1,15 @@
+server {
+    listen 80 default_server;
+    listen [::]:80 default_server ipv6only=on;
+
+    location / {
+        proxy_pass http://127.0.0.1:8080;
+    }
+
+    location /static/ {
+        root /usr/share/nginx/html;
+        try_files $uri $uri/ =404;
+        autoindex off;
+
+    }
+}
