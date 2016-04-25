@@ -5,7 +5,8 @@
 ################################################################################
 import sys
 import sqlite3
-from flask import Flask, jsonify, render_template
+import uuid
+from flask import Flask, jsonify, json, render_template, request
 from random import randint, choice
 
 ################################################################################
@@ -32,7 +33,7 @@ classes = [
 # Helper Functions
 ################################################################################
 def card_image_url(card_game_id):
-    return "http://wow.zamimg.com/images/hearthstone/cards/enus/original/" + card_game_id + ".png"
+    return "http://hs.jwd.me/static/" + card_game_id + ".png"
 
 def select_rarity(rare_gauranteed):
     roll = randint(1,100)
@@ -42,7 +43,7 @@ def select_rarity(rare_gauranteed):
     return "COMMON"
 
 def get_url(hero):
-    url = 'http://wow.zamimg.com/images/hearthstone/cards/enus/original/HERO_'
+    card_game_id = 'HERO_'
     x_offset = -115
     y_offset = -85
     
@@ -75,9 +76,21 @@ def get_url(hero):
         index = '09'
         x_offset += 8;
     
-    url = url+index+'.png'
-    return [url, x_offset, y_offset]
-        
+    return {'url': card_image_url(card_game_id + index), 'x-offset': x_offset, 'y-offset': y_offset}
+
+def store_draft(draft, hero_class, db):
+    game_id = str(uuid.uuid4())
+    draft_json = json.dumps(draft)
+    sql = "INSERT INTO games (game_id, draft_json) VALUES (?, ?);";
+    db.execute(sql, (game_id, draft_json));
+
+    sql = "UPDATE scores SET offer_counter = (SELECT offer_counter + 1) WHERE card_game_id = ? AND draft_class = ?;"
+    for pack in draft:
+        for card in draft[pack]:
+            db.execute(sql, (draft[pack][card],hero_class))
+    db.commit();
+    return game_id
+    
 ################################################################################
 # Routes
 ################################################################################
@@ -92,7 +105,7 @@ def set():
     sql = "SELECT card_game_id, card_name_en  FROM cards ORDER BY card_name_en"
     output = "<h1>Current Set</h1>"
     for row in c.execute(sql):
-        output += '<img src="' + card_image_url(row[0])  + '"title="' + row[1]  + '">'
+        output += '<img src="' + card_image_url('cards/' + row[0])  + '"title="' + row[1]  + '">'
     return output
 
 @app.route("/draft")
@@ -105,6 +118,7 @@ def draft():
     random_class = choice(classes)
     hero = get_url(random_class)
     packs = []
+    db_packs = {}
 
     # Define base query
     sql  = """
@@ -131,6 +145,8 @@ LIMIT 3
         rarity_2 = pick_rarity
         if pick_rarity == "COMMON": rarity_2 = "FREE"
         cards = []
+        db_cards = {}
+        j = 0;
         for row in c.execute(sql, [random_class, pick_rarity, rarity_2]):
             card  = []
             card.insert(0, row[0]) # id
@@ -140,9 +156,41 @@ LIMIT 3
             card.insert(4, row[4]) # rarity
             card.insert(5, row[5]) # score
             cards.append(card)
+            db_cards[j] = row[0]
+            j += 1
         packs.append(cards)
-    return render_template("draft.html", head_title ='Draft Game', hero_class=random_class.title(), hero_url=hero[0], x_offset=hero[1], y_offset=hero[2], draft=packs)
+        db_packs[i] = db_cards
+    game_id = store_draft(db_packs, random_class, db)
+    return render_template("draft.html", 
+        head_title ='Draft Game', 
+        hero_class=random_class.title(), 
+        hero_url=hero['url'], 
+        x_offset=hero['x-offset'], 
+        y_offset=hero['y-offset'], 
+        game_id=game_id, 
+        draft=packs)
 
+@app.route("/draftdone", methods=['POST'])
+def draftdone():
+    # Establish db connection
+    db = sqlite3.connect('game.sqlite')
+    data = request.form
+    picks = json.loads(data['picks'])
+
+    array_picks = {}
+    for pick in picks:
+        pick_number = picks[pick]['pick-number']
+        card_id     = picks[pick]['card-id']
+        array_picks[int(pick_number)] = card_id
+        sql = "UPDATE scores SET pick_counter = (SELECT pick_counter + 1) WHERE card_game_id = ? AND draft_class = ?;"
+        db.execute(sql, (card_id, data['draft_class'].lower()))
+     
+    sql = "UPDATE games SET picks_json = ?, time_used = ? WHERE game_id = ?;"
+    db.execute(sql, (json.dumps(array_picks), data['time_used'], data['game_id']))
+    db.commit()
+    return data['game-id']
+        
+    
 @app.route("/leaderboards")
 def leaderboards():
     return render_template('leaderboards.html')

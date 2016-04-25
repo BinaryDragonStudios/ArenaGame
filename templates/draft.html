@@ -10,12 +10,13 @@ img {
 #draft_container {
     margin: auto;
     width: 1350px;
+    display: none;
 }
 
 #pick_container {
     display: inline-block;
     margin: auto;
-    background-image: url(https://i.gyazo.com/a5df51995de49831c94eff0b021ac2bb.png);
+    background-image: url(http://hs.jwd.me/static/draft.png);
     background-repeat: no-repeat;
     background-size: 1092px 724px;
     width: 1092px;
@@ -48,7 +49,7 @@ img {
 .arena_text.drafting {
     display: block;
     margin: auto;
-    padding-top: 16px;
+    padding-top: 17px;
 }
 
 .arena_text#choose {
@@ -83,7 +84,7 @@ img {
 }
 
 .hero .portrait ~ .frame {
-    background-image: url("http://us.battle.net/hearthstone/static/images/game-guide/heroes/hero-frame.png");
+    background-image: url("http://hs.jwd.me/static/hero-frame.png");
     background-repeat: no-repeat;
     height: 127px;
     position: absolute;
@@ -109,7 +110,7 @@ ul#draft_list {
     list-style: none;
     font-size: 0.8em;
     padding: 0;
-    width: 200px;
+    width: 220px;
 }
 
 ul#draft_list li {
@@ -136,7 +137,7 @@ ul#draft_list li:before {
     display: inline-block;
     height: 24px;
     width: 24px;
-    background-image: url(https://i.gyazo.com/861716aa6b4f16da952cab43c725f1e0.png);
+    background-image: url(http://hs.jwd.me/static/gem.png);
     background-size:contain; 
     background-repeat:no-repeat;
     margin-top: 2px;
@@ -148,11 +149,15 @@ span.card_cost {
 }
 
 span.card_cost.offset {
-    margin-left: -20px;
+    margin-left: -21px;
 }
 
 span.card_name {
     margin-left: 13px;
+}
+
+span.card_name.offset {
+    margin-left: 11px;
 }
 
 span.card_name.neutral { color: #fff; }
@@ -169,18 +174,42 @@ $(document).ready(function () {
     var card_on_press = function(pick, pick_array){
         // immediately unbind the click event disabling more picks
  //       $(".pack_pick").click(function(){});
-        count +=1;
         $("ul#draft_list").empty();
         var content = '';
-        var data = [ parseInt(pick.attr('data-cost'), 10), count, pick.attr('data-id'), pick.attr('data-name'), pick.attr('data-class').toLowerCase(), pick.attr('data-rarity').toLowerCase() ]
+        var data = {};
+        data['card-id']     = pick.attr('data-id');
+        data['name']        = pick.attr('data-name');
+        data['pick-number'] = pick.attr('data-pick-number');
+        data['class']       = pick.attr('data-class').toLowerCase();
+        data['rarity']      = pick.attr('data-rarity').toLowerCase();
+        data['cost']        = pick.attr('data-cost');
         pick_array.push(data);
-        pick_array.sort();
+        pick_array.sort(function (a, b) {
+            // sort callback
+            if (parseInt(a['cost']) > parseInt(b['cost'])) {
+                // if a is larger return 1
+                return 1;
+            } else if (parseInt(a['cost']) < parseInt(b['cost'])) {
+                // if a is smaller return -1
+                return -1;
+            } else {
+                // if a and b a are equal compare by their name
+                // a earlier in th alphabet
+                if (a['name'] < b['name']) return -1;
+                // a later in the alphabet
+                if (a['name'] > b['name']) return 1;                
+                // same name and mana cost, equal
+                return 0;
+            }
+        });
         $.each(pick_array, function(i, val) {
             var offset = '';
-            if(pick_array[i][0].toString().length > 2) {offset = 'offset'};
-            content += '<li class="' + pick_array[i][4] + '">' + '<span class="card_cost ' + offset + '">' + pick_array[i][0] + '</span><span class="card_name ' + pick_array[i][5]+ '">' + pick_array[i][3] + '</span>';
+            if(val['cost'].toString().length > 1) {offset = 'offset'};
+            content += '<li class="' + val['class'] + '">' + '<span class="card_cost ' + offset + '">' + val['cost'] + '</span><span class="card_name ' + val['rarity']+ ' ' + offset + '">' + val['name'] + '</span>';
+            return_picks[i] = val;
         })
         $("ul#draft_list").append(content);        // if we are still making picks
+        count +=1;
         if(count <= 30) {
             // update counter
             $("#count").html(count.toString());
@@ -193,6 +222,16 @@ $(document).ready(function () {
                 })
             })
         } else {
+            var end_time = $.now();
+            var time_used = end_time - start_time;
+            alert(time_used);
+            var game_id = "{{ game_id }}";
+            var hero_class = "{{ hero_class }}";
+            $.post("/draftdone",{ draft_class: hero_class, game_id: game_id, picks:  JSON.stringify(return_picks), time_used: time_used }, function(response, status) {
+                if(status == 'error') { alert(status) };
+            }, "json").done(function(response) {
+                alert(response);
+            });
             // we are done making picks, game over
             $(".pack_row").hide(0, function(){
                 $('#choose').html("GAME OVER")
@@ -202,29 +241,18 @@ $(document).ready(function () {
     }
     var count = 1;
     var pick_array = [];
+    var return_picks = {};
     var pick_numbers = [];
-    $("#draft_container").show(0);
+    var start_time = $.now();
     $("tr").hide(0);
     $("tr:first").show(100);
+    $("#draft_container").show(500);
     $(".pack_pick").on("click", function() {
         if($.inArray($(this).attr('data-pick-number'), pick_numbers ) == -1) {
             pick_numbers.push($(this).attr('data-pick-number'))
             card_on_press($(this),pick_array);
         }
     });
-    /*
-    $(".pack_pick").click(function(){
-        $(this).closest("tr").hide(0, function () {
-            $(this).closest("tr").next("tr").show(300);
-        });
-        count += 1;
-        if(count == 31) {
-            document.getElementById('choose').innerHTML="GAME OVER"
-        } else {
-            document.getElementById('count').innerHTML=count;
-        }
-    })
-    */
 })
 </script>
 {% endblock %}
@@ -249,16 +277,16 @@ $(document).ready(function () {
                     data-cost="{{ pack[0][2] }}" 
                     data-class="{{ pack[0][3] }}" 
                     data-rarity="{{ pack[0][4] }}" 
-                    src="http://wow.zamimg.com/images/hearthstone/cards/enus/original/{{ pack[0][0] }}.png">
+                    src="http://hs.jwd.me/static/cards/{{ pack[0][0] }}.png">
                 <td><img 
                     class="pack_pick" 
                     data-pick-number={{ loop.index }} 
-                    data-id="{{ pack[2][0] }}" 
+                    data-id="{{ pack[1][0] }}" 
                     data-name="{{ pack[1][1] }}" 
                     data-cost="{{ pack[1][2] }}" 
                     data-class="{{ pack[1][3] }}" 
                     data-rarity="{{ pack[1][4] }}" 
-                    src="http://wow.zamimg.com/images/hearthstone/cards/enus/original/{{ pack[1][0] }}.png">
+                    src="http://hs.jwd.me/static/cards/{{ pack[1][0] }}.png">
                 <td><img 
                     class="pack_pick" 
                     data-pick-number={{ loop.index }} 
@@ -267,7 +295,7 @@ $(document).ready(function () {
                     data-cost="{{ pack[2][2] }}" 
                     data-class="{{ pack[2][3] }}" 
                     data-rarity="{{ pack[2][4] }}" 
-                    src="http://wow.zamimg.com/images/hearthstone/cards/enus/original/{{ pack[2][0] }}.png">
+                    src="http://hs.jwd.me/static/cards/{{ pack[2][0] }}.png">
             </tr>
         {% endfor %}
         </table>

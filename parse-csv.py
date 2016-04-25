@@ -62,7 +62,7 @@ def main():
                                 score = value.strip('\*')
                                 
                                 # Now that we have all available card data, insert them into the database
-                                card_data = (card_game_id, draft_class, score, modifier, score_version, None, None)
+                                card_data = (card_game_id, draft_class, score, modifier, score_version, 0, 0)
                                 c.execute('REPLACE INTO scores VALUES(?,?,?,?,?,?,?)', card_data)
                                 
                             # Toggle is_card_name
