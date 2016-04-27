@@ -6,6 +6,8 @@
 import sys
 import sqlite3
 import uuid
+import logging
+from logging.handlers import RotatingFileHandler
 from flask import Flask, jsonify, json, render_template, request
 from random import randint, choice
 
@@ -81,8 +83,8 @@ def get_url(hero):
 def store_draft(draft, hero_class, db):
     game_id = str(uuid.uuid4())
     draft_json = json.dumps(draft)
-    sql = "INSERT INTO games (game_id, draft_json) VALUES (?, ?);";
-    db.execute(sql, (game_id, draft_json));
+    sql = "INSERT INTO games (game_id, game_class, draft_json) VALUES (?, ?, ?);";
+    db.execute(sql, (game_id, hero_class, draft_json))
 
     sql = "UPDATE scores SET offer_counter = (SELECT offer_counter + 1) WHERE card_game_id = ? AND draft_class = ?;"
     for pack in draft:
@@ -144,19 +146,19 @@ LIMIT 3
         pick_rarity = select_rarity(i in [1,10,20,30])
         rarity_2 = pick_rarity
         if pick_rarity == "COMMON": rarity_2 = "FREE"
-        cards = []
+        cards = {}
         db_cards = {}
-        j = 0;
+        j = 1;
         for row in c.execute(sql, [random_class, pick_rarity, rarity_2]):
-            card  = []
-            card.insert(0, row[0]) # id
-            card.insert(1, row[1]) # name
-            card.insert(2, row[2]) # cost
-            card.insert(3, row[3]) # class
-            card.insert(4, row[4]) # rarity
-            card.insert(5, row[5]) # score
-            cards.append(card)
-            db_cards[j] = row[0]
+            card  = {}
+            card['card-id']     = row[0]
+            card['card-name']   = row[1]
+            card['card-cost']   = row[2]
+            card['card-class']  = row[3]
+            card['card-rarity'] = row[4]
+            card['card-score']  = row[5]
+            db_cards[j]         = row[0] # card-id
+            cards[j]            = card
             j += 1
         packs.append(cards)
         db_packs[i] = db_cards
@@ -188,9 +190,46 @@ def draftdone():
     sql = "UPDATE games SET picks_json = ?, time_used = ? WHERE game_id = ?;"
     db.execute(sql, (json.dumps(array_picks), data['time_used'], data['game_id']))
     db.commit()
-    return data['game-id']
+    return data['game_id']
         
+@app.route("/result/<game_id>")
+def result(game_id):
+    game  = {}
+    score = 0
+    db = sqlite3.connect('game.sqlite')
+    db.text_factory = str
+    c = db.cursor()
+    game_sql = """
+        SELECT game_class, draft_json, picks_json, time_used 
+        FROM games 
+        WHERE game_id = ?;
+    """
+    app.logger.info(game_id)
+    try:
+        c.execute(game_sql, (game_id.strip(), ))
+        row = c.fetchone()
+    except sqlite3.Error as error:
+        app.logger.error(error)
+        return render_template('result.html', error = "No such game");
+        
+    game['class']       = row[0]
+    game['draft']       = row[1]
+    game['picks']       = row[2]
+    game['time_used']   = row[3]           
+
+    scores_sql = "SELECT card_game_id, score, modifier FROM scores WHERE draft_class = ?"
     
+    try:
+        c.execute(scores_sql, (game['class'], ))
+        scores = c.fetchall()
+    except sqlite3.Error as error:
+        app.logger.error('An error occured: ' + error)
+        return render_template('result.html', error = "Something went wrong");   
+    
+    db.commit()
+    app.logger.info(scores)
+    return render_template('result.html', error = False, draft = game['draft'], picks = game['picks'], scores = scores, time_used = game['time_used'], user_score = score)
+        
 @app.route("/leaderboards")
 def leaderboards():
     return render_template('leaderboards.html')
@@ -225,7 +264,7 @@ ORDER BY
     card_images = ""
     card_count = 0
     for row in c.execute(sql, [class_lookup, ]):
-        card_images += '<img src="' + card_image_url(row[0])  + '"title="' + row[1]  + ': ' + row[4]  + '">'
+        card_images += '<img src="' + card_image_url('cards/' + row[0])  + '"title="' + row[1]  + ': ' + row[4]  + '">'
         class_power += int(row[4])
         card_count += 1
 
@@ -250,6 +289,13 @@ if __name__ == "__main__":
     flask_port = 5000
     flask_host = "127.0.0.1"
 
+    # Set up logging
+    formatter = logging.Formatter("%(asctime)s | %(pathname)s:%(lineno)d | %(funcName)s | %(levelname)s | %(message)s ")
+    handler = RotatingFileHandler('game.log', maxBytes=10000, backupCount=1)
+    handler.setLevel(logging.DEBUG)
+    app.logger.addHandler(handler)
+    app.logger.setLevel(logging.DEBUG)
+
     # Check if debug mode was specified
     if "--debug" in sys.argv:
         print "Starting in debug mode."
@@ -261,5 +307,4 @@ if __name__ == "__main__":
 
     # Start the server on default port (5000)
     app.run(host = flask_host, port = flask_port)
-
 

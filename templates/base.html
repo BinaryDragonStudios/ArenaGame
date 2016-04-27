@@ -25,13 +25,99 @@ a {
     color: blue;
     text-decoration: none;
 }
+
+#presentation_container {
+    display: block;
+    margin: auto;
+    background-image: url(http://hs.jwd.me/static/draft.png);
+    background-repeat: no-repeat;
+    background-size: 1092px 724px;
+    width: 1092px;
+    height: 724px;
+    z-index: -1;
+}
+
+.arena_text {
+    color: #fff;
+    text-shadow:
+          2px 2px 0 #222,
+        -1px -1px 0 #000,  
+         1px -1px 0 #000,
+         -1px 1px 0 #000,
+          1px 1px 0 #000;
+    font-weight: normal;
+    width: 300px;
+    font-size: 1.2em;
+}
+
+.arena_text#header1 {
+    display: block;
+    margin: auto;
+    padding-top: 17px;
+}
+
+.arena_text#header2 {
+    display: inline-block;
+    vertical-align: top;
+    position: relative;
+    top: 97px;
+    align: center;
+}
+
+#hero {
+    display: inline-block;
+    position: relative;
+    vertical-align: top;
+    width: 111px;
+    margin: 20px 0 0 70px;
+}
+
+#hero .portrait {
+    background-position: {{ x_offset }}px {{ y_offset }}px;
+    background-image: url({{ hero_url }});
+    background-repeat: no-repeat;
+    height: 85px;
+    width: 72px;
+    position: relative;
+    top: 21px;
+    left: 20px;
+    z-index: 2;
+    border-top-left-radius: 20px;
+    border-top-right-radius: 20px;
+}
+
+#hero .portrait ~ .frame {
+    background-image: url("http://hs.jwd.me/static/hero-frame.png");
+    background-repeat: no-repeat;
+    height: 127px;
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 111px;
+    z-index: 3;
+}
+
+#gem {
+    background-image: url(http://hs.jwd.me/static/gem.png);
+    background-repeat: no-repeat;
+    background-size: contain;
+    display: inline-block;
+    position: relative;
+    top: 45px;
+    right: 85px;
+    width: 100px;
+    height: 100px;
+    float: right;
+    z-index: 3;
+}
+
 </style>
 {% block style %}{% endblock %}
 {% block script %}{% endblock %}
 </head>
 <body>
 <h1><a href="./">Arena Game</a></h1>
-<h2><a href="draft">New Game</a> | <a href="leaderboards">Leaderboards</a></h2>
+<h2><a href="http://hs.jwd.me/draft">New Game</a> | <a href="http://hs.jwd.me/leaderboards">Leaderboards</a></h2>
 <!-- begin content -->
 {% block content %}{% endblock %}
 <!-- end content -->
