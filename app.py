@@ -6,6 +6,7 @@
 import sys
 import sqlite3
 import uuid
+import collections
 import logging
 from logging.handlers import RotatingFileHandler
 from flask import Flask, jsonify, json, render_template, request
@@ -118,7 +119,6 @@ def draft():
 
     # Buffer page output
     random_class = choice(classes)
-    hero = get_url(random_class)
     packs = []
     db_packs = {}
 
@@ -162,14 +162,14 @@ LIMIT 3
             j += 1
         packs.append(cards)
         db_packs[i] = db_cards
+        
     game_id = store_draft(db_packs, random_class, db)
+
     return render_template("draft.html", 
         head_title ='Draft Game', 
-        hero_class=random_class.title(), 
-        hero_url=hero['url'], 
-        x_offset=hero['x-offset'], 
-        y_offset=hero['y-offset'], 
-        game_id=game_id, 
+        hero_class = random_class.title(), 
+        hero = get_url(random_class),
+        game_id = game_id, 
         draft=packs)
 
 @app.route("/draftdone", methods=['POST'])
@@ -195,7 +195,12 @@ def draftdone():
 @app.route("/result/<game_id>")
 def result(game_id):
     game  = {}
-    score = 0
+    card_scores = {}
+    pick = {}
+    picks = {}
+    user_score = 0
+    max_score = 0
+    pick_score = 0
     db = sqlite3.connect('game.sqlite')
     db.text_factory = str
     c = db.cursor()
@@ -204,31 +209,69 @@ def result(game_id):
         FROM games 
         WHERE game_id = ?;
     """
-    app.logger.info(game_id)
     try:
-        c.execute(game_sql, (game_id.strip(), ))
+        c.execute(game_sql, (game_id, ))
         row = c.fetchone()
     except sqlite3.Error as error:
         app.logger.error(error)
         return render_template('result.html', error = "No such game");
         
-    game['class']       = row[0]
-    game['draft']       = row[1]
-    game['picks']       = row[2]
-    game['time_used']   = row[3]           
+    game['hero_class'] = row[0]
+    draft              = {int(k):v for k,v in json.loads(row[1]).items()}
+    picks              = {int(k):v for k,v in json.loads(row[2]).items()}
+    game['time_used']  = round(float(row[3]) / 1000, 2)
 
-    scores_sql = "SELECT card_game_id, score, modifier FROM scores WHERE draft_class = ?"
+    scores_sql = """
+        SELECT card_game_id, score, modifier 
+        FROM scores 
+        WHERE draft_class = ?;        
+    """
     
     try:
-        c.execute(scores_sql, (game['class'], ))
+        c.execute(scores_sql, (game['hero_class'], ))
         scores = c.fetchall()
     except sqlite3.Error as error:
         app.logger.error('An error occured: ' + error)
         return render_template('result.html', error = "Something went wrong");   
     
+    for row in scores:
+        card_scores[row[0]] = row[1]     # index is card_game_id, value is score
+    
+    game['card_scores'] = card_scores
+    
+    for pick_number in draft:
+        if card_scores[draft[pick_number]['1']] >= card_scores[draft[pick_number]['2']]:
+            best_score = int(card_scores[draft[pick_number]['1']])
+        else:
+            best_score = int(card_scores[draft[pick_number]['2']])
+             
+        if best_score < int(card_scores[draft[pick_number]['3']]):
+            best_score = int(card_scores[draft[pick_number]['3']])
+              
+        max_score += best_score
+
+        if picks[pick_number]:
+            pick_score +=  float(card_scores[picks[pick_number]])
+        else:
+            pick_score -= best_score * 2
+            
+    total_score =  max_score - pick_score
+    
+    game['user_score'] = total_score + game['time_used']
+    
+    sql_update_game = "UPDATE games SET score = ? WHERE game_id = ?;"
+    c.execute(sql_update_game, (game['user_score'], game_id))
     db.commit()
-    app.logger.info(scores)
-    return render_template('result.html', error = False, draft = game['draft'], picks = game['picks'], scores = scores, time_used = game['time_used'], user_score = score)
+    
+    hero = get_url(game['hero_class'])
+    game['picks'] = json.dumps(picks)
+    game['draft'] = collections.OrderedDict(sorted(draft.items()))
+    app.logger.info(game['draft'])
+    return render_template('result.html', 
+        error = False, 
+        game = game,  
+        hero = hero
+    )
         
 @app.route("/leaderboards")
 def leaderboards():
