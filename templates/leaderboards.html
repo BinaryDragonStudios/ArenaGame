@@ -1,1 +1,200 @@
 {% extends "base.html" %}
+{% block style %}
+<style>
+
+#hero {
+    visibility: hidden;
+} 
+
+table#score_table {
+    width: 850px;
+    margin: auto;
+}
+
+.arena_text#info {
+    margin-top: 75px;
+}
+
+table#score_table th {
+    padding-bottom: 10px;
+}
+
+table#score_table td {
+    width: 33%;
+}
+
+ul.leaderboard {
+    list-style-position: inside;
+    list-style: none;
+    font-size: 0.8em;
+    padding: 0;
+    margin-top: 1px;
+    margin-left: 3px;
+}
+
+ul.leaderboard li {
+    background-color: #fddfb9;
+    color: #fff;
+    font-weight: normal;
+    border: 1px solid #222;
+    border-radius: 3px;
+    padding-top: 2px;
+    cursor: pointer;
+    filter: grayscale(90%);
+}
+
+ul.leaderboard li:hover {
+    border-color: #0f0;
+}
+
+ul.leaderboard li.header {
+    width: 100%;
+    font-size: 1.1em;
+    border-color: #222;
+    cursor: default;
+}
+
+#week ul.leaderboard li.header {
+    background-color: #7ecbfe;
+}
+
+#month ul.leaderboard li.header {
+    background-color: #fe64fc;
+}
+
+#alltime ul.leaderboard li.header {
+    background-color: #f4923e;
+}
+
+ul.leaderboard li.header:before {
+    visibility: hidden;
+}
+
+.warrior .score {background-color: #702116;}
+.shaman  .score {background-color: #292f55;}
+.rogue   .score {background-color: #3d3e42;}
+.paladin .score {background-color: #ebaa1b;}
+.hunter  .score {background-color: #246521;}
+.druid   .score {background-color: #6e411f;}
+.warlock .score {background-color: #503458;}
+.mage    .score {background-color: #596896;}
+.priest  .score {background-color: #b8bec1;}
+
+ul.leaderboard li:before {
+    content: attr(data-content) '';
+    display: inline-block;
+    height: 24px;
+    width: 24px;
+    background-image: url(http://hs.jwd.me/static/gem_common.png);
+    background-size: contain; 
+    background-repeat: no-repeat;
+    margin: 0 2px 1px 5px;
+    vertical-align: middle;
+}
+
+#alltime ul.leaderboard li:before {
+    background-image: url(http://hs.jwd.me/static/gem_legendary.png);
+}
+
+#month ul.leaderboard li:before {
+    background-image: url(http://hs.jwd.me/static/gem_epic.png);
+}
+
+#week ul.leaderboard li:before {
+    background-image: url(http://hs.jwd.me/static/gem_rare.png);
+}
+
+span.score,
+span.nickname {
+    display: inline-block;
+    font-size: 0.9em;
+}
+
+span.nickname {
+    height: 100%;
+    width: 65%;
+    padding-left: 5px;
+}
+
+span.score{
+    width: 16%;
+    margin-left: -2px;
+    padding: 1px 6px;
+    border-radius: 2px;   
+}
+
+</style>
+{% endblock %}
+{% block script %}
+<script>
+    $(document).ready(function () {
+        leaderboard_week    = JSON.parse({{ leaderboard_week | tojson | safe }});
+        leaderboard_month   = JSON.parse({{ leaderboard_month | tojson | safe }});
+        leaderboard_alltime = JSON.parse({{ leaderboard_alltime | tojson | safe }});
+        
+        cols = ['week', 'month', 'alltime'];
+        
+        for (i = 0; i < 3; i++) {
+            $("#score_table tr.boards").append("<td id='"+cols[i]+"'><ul class='leaderboard'></ul></td>");
+        }
+        
+        $("td#week ul.leaderboard").append("<li class='header'>Last 7 days</li>");
+        
+        $.each(leaderboard_week, function(i, val) {
+            $("td#week ul.leaderboard").append("<li 'data-content'= '' id='"+val['game_id']+"' class='"+val['game_class']+"' title='Open game'>" +
+                                "<span class='nickname arena_text'>"+val['nickname']+"</span>" +
+                                "<span class='score arena_text'>"+val['score']+"</span>" +
+                              "</li>")
+        })
+        
+        $("td#month ul.leaderboard").append("<li class='header'>Last 30 days</li>");
+
+        $.each(leaderboard_month, function(i, val) {
+            $("td#month ul.leaderboard").append("<li 'data-content'= '' id='"+val['game_id']+"' class='"+val['game_class']+"' title='Open game'>" +
+                                "<span class='nickname arena_text'>"+val['nickname']+"</span>" +
+                                "<span class='score arena_text'>"+val['score']+"</span>" +
+                              "</li>")
+        })
+         
+        $("td#alltime ul.leaderboard").append("<li class='header'>All time</li>");
+
+        $.each(leaderboard_alltime, function(i, val) {
+            $("td#alltime ul.leaderboard").append("<li 'data-content'= '' id='"+val['game_id']+"' class='"+val['game_class']+"' title='Open game'>" +
+                                "<span class='nickname arena_text'>"+val['nickname']+"</span>" +
+                                "<span class='score arena_text'>"+val['score']+"</span>" +
+                              "</li>")
+            $("li:nth-child("+i+")").attr('data-content', '\xa0'+(i-1).toString());
+            placement = i.toString();
+            if (i < 10) {
+                placement = '\xa0'+i.toString();
+            }
+            $("li:last-child").attr('data-content', placement);
+        })
+
+
+        $('.leaderboard li:not(.header)').on('click', function() {
+            game_id = $(this).attr('id');
+            window.location.replace( "http://hs.jwd.me/result/" + game_id );
+        });
+    })
+</script>
+{% endblock %}
+{% block content %}
+    <div id="presentation_container">
+        <h2 class="arena_text" id="header1">LEADERBOARDS</h2>
+        <div id="hero">
+            <div class="portrait"></div>
+            <div class="frame"></div>
+        </div>
+        <h2 class="arena_text" id="header2">Top ten players</h2>
+        <div class="arena_text" id="info">
+           <table id="score_table">
+                <tr class="header">
+                    <th colspan="3">Click on an entry to get draft breakdown</th>
+                </tr>
+                <tr class="boards">
+                 </tr>
+            </table>
+        </u>
+    </div>
+{% endblock %}

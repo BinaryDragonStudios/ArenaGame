@@ -24,42 +24,50 @@ img {
     visibility: hidden;
 }
 
+#hero .portrait {
+    background-position: {{ hero['x-offset'] }}px {{ hero['y-offset'] }}px;
+    background-image: url({{ hero['url'] }});
+}
+
 #gem span.arena_text {
-    font-size: 2.5em;
+    font-size: 3em;
     position: absolute;
     top: 14px;
-    left: 36px;
+    left: 27px;
+    color: #fff6a9;
 }
 
 table#pack_table {
     display: none;
-}
-
-.arena_text#header2 {
-    left: 205px;
+    margin: auto;
 }
 
 .arena_text#info {
+    margin: auto;
     font-size: 1.1em;
-    width: 600px;
+    width: 800px;
+}
+
+.arena_text#info .header {
+    margin-bottom: 30px;
+}
+
+#rules {
+    margin-top: 100px;
 }
 
 #rules li {
-    padding-bottom: 5px;
+    list-style: none;
+    padding: 5px 0;
 }
 
-.start {
-    text-align: center;
-    margin-top: 40px;
+#rules span {
+    padding-left: 10px;
 }
 
 button#start {
-    margin-top: 30px;
-    text-align: center;
-    padding-bottom: 10px;
     font-size: 2em;
     width: 200px;
-    cursor: pointer;
 }
 
 .pack_pick {
@@ -106,24 +114,27 @@ ul#draft_list li.warlock {background-color: #503458}
 ul#draft_list li.mage {background-color: #596896}
 ul#draft_list li.priest {background-color: #b8bec1}
 
-ul#draft_list li:before {
+li:before {
     content: '';
     display: inline-block;
-    height: 24px;
-    width: 24px;
+    height: 20px;
+    width: 20px;
     background-image: url(http://hs.jwd.me/static/gem.png);
-    background-size: contain; 
+    background-size: cover; 
     background-repeat: no-repeat;
-    margin-top: 2px;
+    margin-left: 2px;
+    padding-bottom: 1px;    
     vertical-align: middle;
 }
 
 span.card_cost {
-    margin-left: -16px;
+    margin-left: -14px;
+    vertical-align: middle;
+    color: #fff6a9;
 }
 
 span.card_cost.offset {
-    margin-left: -21px;
+    margin-left: -18px;
 }
 
 span.card_name {
@@ -146,6 +157,28 @@ span.card_name.neutral { color: #fff; }
 span.card_name.rare { color: #418eff; }
 span.card_name.epic { color: #d155f9; }
 span.card_name.legendary { color: #ffb024; }
+
+#leaderboard_entry {
+    margin-top: 100px;
+    text-align: center;
+}
+
+
+#leaderboard_entry #warning {
+    color: #F598A9;
+    font-size: 0.8em;
+}
+
+#leaderboard_entry input {
+    padding 0 5px;
+}
+
+#leaderboard_entry button {
+    width: 103px;
+    background-color: #f4923e;
+    color: #fff;
+    margin: 10px 3px;
+}
 
 </style>
 {% endblock %}
@@ -209,9 +242,9 @@ $(document).ready(function () {
             // update counter
             $("#count").html(count.toString());
             // hide/make sure all rows are hidden 
-            $("tr.pack_row:nth-child(" + (count-1).toString() + ")").hide(0, function(){
+            $("tr.pack_row:nth-child(" + (count-1).toString() + ")").hide(0, function(){ 
                 // show only the next row
-                $("tr.pack_row:nth-child(" + count.toString() + ")").show(300, function(){
+                $("tr.pack_row:nth-child(" + count.toString() + ")").show(300, function(){ 
                     // once row is visible rebind card_on_press function
                     // $(".pack_pick").click = card_on_press
                 })
@@ -221,9 +254,55 @@ $(document).ready(function () {
             var time_used = end_time - start_time;
             var game_id = "{{ game_id }}";
             var hero_class = "{{ hero_class }}";
-            $.post("/draftdone",{ draft_class: hero_class, game_id: game_id, time_used: time_used, picks:  JSON.stringify(return_picks) }).done( function( response ) {
-                window.location.replace( "http://hs.jwd.me/result/" + response );
-            });
+            $.post("/draftdone",{ draft_class: hero_class, game_id: game_id, time_used: time_used, draft: JSON.stringify({{ draft | tojson }}), picks:  JSON.stringify(return_picks) })
+                .done( function( made_leaderboards ) {
+                    result_page = "http://hs.jwd.me/result/" + game_id;
+                    if(made_leaderboards == "True") {
+                        clearInterval(counter);
+                        clearTimeout(timeout_id);
+                        $("#gem span").html("");
+                        $("#pack_table").hide();                       
+                        $(".arena_text#info").html("<div id='leaderboard_entry'><div class='header'>You made it to the leaderboards!</div>" +
+                            "<form action='"+result_page+"'>" +
+                                "Please enter a nickname (4 to 20 chars)<br /><br />" +
+                                "<div id='warning'></div>" +
+                                "<input id='nickname' name='nickname'/>" +
+                            "</form>" +
+                            "<button id='leaderboards'><span class='arena-text'>Submit</span></button>" +
+                            "<a href='" + result_page + "'><button id='cancel'><span class='arena-text'>No thanks</span></button></a></div>").show();
+                        $("input#nickname").keyup( function(e) {
+                            if( e.keyCode === 13 ) {
+                                $.post("/nickname",{ game_id: game_id, form_data: $("form").serialize() })
+                                    .done( function (response) {
+                                        if(response == "OK") {
+                                            window.location.replace( result_page );
+                                        } else {
+                                            $("input#nickname").css("border", "red");
+                                            $("#warning").html(response);
+                                        }
+                                    });
+                            }
+                        });
+                        $("button#leaderboards").on( "click",  function () {
+                            $.post("/nickname",{ game_id: game_id, form_data: $("form").serialize() })
+                                .done( function (response) {
+                                    if(response == "OK") {
+                                        window.location.replace( result_page );
+                                    } else {
+                                        $("input#nickname").css("border", "red");
+                                        $("#warning").html(response);
+                                    }
+                                });
+                        });
+                    } else {
+                        window.location.replace( result_page );
+                    }
+                })
+                .fail( function() {
+                    $("#draft_container").html("Oh no! Something bad happened")
+                });
+ 
+    
             // we are done making picks, game over
             $(".pack_row").hide(0, function(){
                 $('#header2').html("GAME OVER")
@@ -234,7 +313,7 @@ $(document).ready(function () {
     var pick_array = [];
     var return_picks = {};
     var pick_numbers = [];
-    var start_time = $.now();
+    var start_time = 0;
     var timeout_id;
     var counter;
     
@@ -258,9 +337,9 @@ $(document).ready(function () {
         }, 5000);
     }
 
-    function slide_list()
-    {
+    function slide_list() {
         if($('.pack_pick').hasClass('first')) {
+
             $('#presentation_container')
             .css({'display': 'inline-block','margin-left': $('#list_container').width()/2})
             .animate({
@@ -272,6 +351,14 @@ $(document).ready(function () {
             .animate({
                 marginLeft: 0
             }, 500);
+            
+            top_margin_left = parseInt($('#page_top').css('marginLeft'))-12
+            $('#page_top')
+            .css({'margin-left': top_margin_left})
+            .animate({
+                marginLeft: top_margin_left - $('#list_container').width()/2
+            }, 500);
+
             $('.pack_pick').removeClass('first')
         }
     }
@@ -285,9 +372,10 @@ $(document).ready(function () {
         $("#header1").html("Now drafting {{ hero_class }}")
         $("#header2").html("Choose a card ( <span id='count'>1</span> / 30 )")
         $("#pack_table").show();
-        start_timer(0,pick_array);
+        start_time = $.now();
+        start_timer(0, pick_array);
     });
-
+    
     $(".pack_pick").on("click", function() {
         if($.inArray($(this).attr('data-pick-number'), pick_numbers ) == -1) {
             pick_numbers.push($(this).attr('data-pick-number'))
@@ -310,10 +398,11 @@ $(document).ready(function () {
         <div id="gem"><span class="arena_text"></span></div>
         <div class="arena_text" id="info">
             <ul id="rules">
-                <li>Like in a real arena draft, you get 3 cards to choose each turn (30 turns)</li>
-                <li>Your goal is to pick the card with the highest value each turn</li>
-                <li>You have 5 seconds each turn to make your decision</li>
-                <li>Your total score is decided by your picks and total time used</li>
+                <li><span class="rule">The game consists of 30 turns</span></li>
+                <li><span class="rule">You get 3 cards to choose from each turn</span></li>
+                <li><span class="rule">Each turn you have 5 seconds to make your decision</span></li>
+                <li><span class="rule">Your goal each turn is to pick the card with the highest value</span></li>
+                <li><span class="rule">Your total score is decided by your decisions and total time used</span></li>
             </ul>
             <div class="start">
                 Ready? Click start to begin!<br />

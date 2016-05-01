@@ -1,0 +1,35 @@
+{% extends "base.html" %}
+{% block style %}
+<style>
+    #hero,
+    #gem {
+        visibility: hidden;
+    }
+
+    #error {
+        margin-top: 100px;
+        text-align: center;
+    }
+
+</style>
+{% endblock %}
+
+{% block script %}
+    <script>
+    </script>
+{% endblock %}
+    
+    {% block content %}
+    <div id="presentation_container">
+        <h2 class="arena_text" id="header1">BAD REQUEST</h2>
+        <div id="hero">
+            <div class="portrait"></div>
+            <div class="frame"></div>
+        </div>
+         <h2 class="arena_text" id="header2">Error message:</h2>
+        <div class="arena_text" id="info">
+            <div id="error">{{ error }}</div>
+        </div>
+    </div>
+ 
+{% endblock %}

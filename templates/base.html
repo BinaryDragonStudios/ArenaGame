@@ -17,21 +17,50 @@ body {
     margin: auto;
 }
 
+#page_top {
+    width: 1064px;
+    padding: 0 10px 5px 15px;
+    margin: 15px auto 10px auto;
+    border: 1px solid #ddd;
+    border-radius: 5px;
+    box-shadow: -7px 7px 5px #999;
+    height: 40px;
+}
+
+#page_top .arena_text {
+    height: 100%;
+    vertical-align: bottom;
+}
+
+#arena {
+    display: inline-block;
+    width: 32%;
+    padding-bottom: 15px;
+}
+
+#menu {
+    display: inline-block;
+    width: 67%;
+    text-align: right;
+}
+
 table {
-    margin: auto;
 }
 
 a {
-    color: blue;
-    text-decoration: none;
+    color: #f4923e;
+    text-decoration: none;   
 }
 
 #presentation_container {
+    clear: both;
     display: block;
     margin: auto;
     background-image: url(http://hs.jwd.me/static/draft.png);
     background-repeat: no-repeat;
     background-size: 1092px 724px;
+    border-radius: 5px;
+    box-shadow: -10px 10px 5px #999;
     width: 1092px;
     height: 724px;
     z-index: -1;
@@ -40,13 +69,17 @@ a {
 .arena_text {
     color: #fff;
     text-shadow:
-          2px 2px 0 #222,
+          -2px 2px 0 #222,
         -1px -1px 0 #000,  
          1px -1px 0 #000,
          -1px 1px 0 #000,
           1px 1px 0 #000;
     font-weight: normal;
     font-size: 1.2em;
+}
+
+.arena_text#arena {
+    font-size: 2em;
 }
 
 .arena_text#header1 {
@@ -63,6 +96,7 @@ a {
     top: 97px;
     align: center;
     width: 300px;
+    left: 205px;
 }
 
 #hero {
@@ -74,8 +108,6 @@ a {
 }
 
 #hero .portrait {
-    background-position: {{ hero['x-offset'] }}px {{ hero['y-offset'] }}px;
-    background-image: url({{ hero['url'] }});
     background-repeat: no-repeat;
     height: 85px;
     width: 72px;
@@ -117,13 +149,30 @@ a {
     margin-top: 100px;
 }
 
+.start {
+    text-align: center;
+    margin-top: 40px;
+}
+
+button#start {
+    margin-top: 30px;
+    text-align: center;
+    padding-bottom: 10px;
+    cursor: pointer;
+}
+
 </style>
 {% block style %}{% endblock %}
 {% block script %}{% endblock %}
 </head>
 <body>
-<h1><a href="./">Arena Game</a></h1>
-<h2><a href="http://hs.jwd.me/draft">New Game</a> | <a href="http://hs.jwd.me/leaderboards">Leaderboards</a></h2>
+<div id="page_top">
+    <div id="arena" class="arena_text"><a href="{{ url_for('index') }}">Arena Draft Game</a></div>
+    <div id="menu" class="arena_text">
+        <a href="http://hs.jwd.me/draft">New Game</a> | 
+        <a href="http://hs.jwd.me/leaderboards">Leaderboards</a> |  <a href="http://hs.jwd.me/shoutouts">Shoutouts</a>
+    </div>
+</div>
 <!-- begin content -->
 {% block content %}{% endblock %}
 <!-- end content -->

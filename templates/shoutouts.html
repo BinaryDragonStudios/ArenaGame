@@ -1,0 +1,51 @@
+{% extends "base.html" %}
+{% block style %}
+<style>
+#shoutoutsbody {
+    margin: auto;
+}
+
+#shoutoutsbody ul li {
+    margin-top: 30px;
+    list-style: none;
+}
+
+#hero,
+#gem {
+    visibility: hidden;
+}
+
+.arena_text#info {
+    width: 800px;
+    font-size: 1em;
+    text-align: center;
+}
+
+.arena_text#header2 {
+     font-size: 1.1em;
+}
+
+
+</style>
+{% endblock %}
+{% block content %}
+
+<div id="shoutoutsbody">
+<div id="presentation_container">
+    <h2 class="arena_text" id="header1">SHOUTOUTS</h2>
+    <div id="hero">
+        <div class="portrait"></div>
+        <div class="frame"></div>
+    </div>
+    <h2 class="arena_text" id="header2">An extra special thanks to&hellip;</h2>
+    <div class="arena_text" id="info">
+        <ul>
+            <li><a href="http://hearthstone.gamepedia.com/Team_5">Team 5</a> over at <a href="http://www.blizzard.com/">Blizzard</a> - Creating this amazing <a href="http://www.playhearthstone.com">game</a>!</li>
+            <li><a href="http://ggoatgaming.com/">Grinning Goat</a> / <a href="http://thelightforge.com/">The Lightforge</a> - Creating a wonderful <a href="https://www.twitch.tv/GrinningGoat">community</a> &amp; <a href="http://thelightforge.com/TierList">tier list.</a></li>
+            <li><a href="https://github.com/rembound/Arena-Helper">Arena Helper</a> - Crafting an awesome plugin for <a href="https://github.com/HearthSim/Hearthstone-Deck-Tracker">deck tracker</a> and maintaining a tier list in <a href="https://github.com/rembound/Arena-Helper/blob/master/data/cardtier.json">JSON</a>.</li>
+            <li><a href="http://www.hearthhead.com/">HearthHead</a> - Providing all the watermarked card images</li>
+        </ul>
+    </div>
+</div>
+</div>
+{% endblock %}

@@ -4,36 +4,7 @@
 #breakdown_container {
     display: none;
     padding-top: 30px;
-}
-
-#info table {
-    padding: 10px;
-    width: 500px;
-    margin-left: -50px;
-    font-size: 1.5em;
-}
-
-.arena_text#header2 {
-    left: 205px;
-}
-
-button#breakdown {
-    margin-top: 50px;
-}
-
-table#pack_table
-{
-    width: 900px;
-}
-
-th, 
-.pick_number {
-    font-size:  2em;
-}
-
-img {
-    width: 250px;
-    margin-top: 30px;
+    padding-bottom: 30px;
 }
 
 #breakdown_container .arena_text
@@ -41,90 +12,163 @@ img {
     text-align: center;
 }
 
-</style>
+#hero .portrait {
+    background-position: {{ hero['x-offset'] }}px {{ hero['y-offset'] }}px;
+    background-image: url({{ hero['url'] }});
+}
+
+#info table {
+    margin: auto;
+    padding: 10px;
+    width: 500px;
+    font-size: 1.5em;
+}
+
+button#start {
+    font-size: 1.1em;
+    width: 350px;
+}
+
+table#pack_table
+{
+    margin: auto;
+    width: 1092px;
+}
+
+tr.pack_row:nth-child(odd) {
+    background-color: #eee;
+}
+
+tr.pack_row:nth-child(even) {
+    background-color: #ddd;
+}    
+ 
+tr.pack_row td {
+    width: 20%;
+}
+
+ tr.pack_row .card {
+    padding-bottom: 10px;
+    margin-top: -45px;
+}
+
+
+td img {
+    position: relative;
+    top: -25px;
+    left: 0;
+    width: 250px;
+}
+
+
+    </style>
 {% endblock %}
 
 {% block script %}
-<script>
-$(document).ready(function () {
-    picks = {{ game['picks'] | tojson | safe }};
-    $.each(JSON.parse(picks), function(i, val) {
-        if(val > '') {
-            $("tr#pick_"+i+" ."+val).html("Your pick");
-        } else {
-            $("tr#pick_"+i+" .no_pick").html("No pick!");
-        }
-    });
-    $("button#breakdown").on("click", function() {
-        $("#breakdown_container").toggle(200);
-    });
+    <script>
+    $(document).ready(function () {
+        draft = JSON.parse({{ game['draft_json'] | tojson | safe }});
+        picks = JSON.parse({{ game['picks'] | tojson | safe }});
+        scores = JSON.parse({{ game['scores_json'] | tojson | safe }});
+        $.each(picks, function(i, val) {
+            max_score = Math.max(scores[draft[i.toString()]['1']], scores[draft[i.toString()]['2']], scores[draft[i.toString()]['3']])
+            min_score = Math.min(scores[draft[i.toString()]['1']], scores[draft[i.toString()]['2']], scores[draft[i.toString()]['3']])
+            if(val > '') {
+                //$("tr#pick_"+i+" ."+val).append("<br />Your pick");
+                pick_score = scores[val];
+                score = max_score - pick_score;
+                if(score > 0) {
+                    $("tr#pick_"+i+" .result").html("Penalty:<br />+ " + score).css("color", "#ff0"); // yellow
+                    $("tr#pick_"+i+" ."+val).css("color", "#ff0625");
+                    if(score > 15) {
+                        $("tr#pick_"+i+" .result").html("Penalty:<br />+ " + score).css("color", "#f4923e"); // orange
+                    } 
+                    if(score > 30) {
+                        $("tr#pick_"+i+" .result").html("Penalty:<br />+ " + score).css("color", "#ff0625"); // red
+                    }
+                } else {
+                    $("tr#pick_"+i+" .result").html("Good job!").css("color", "#1b9711"); // green
+                    $("tr#pick_"+i+" ."+val).css("color", "#1b9711");
+                }
+            } else {
+                $("tr#pick_"+i+" .result").html("No pick! <br />+" + 2*(max_score - min_score)).css("color", "#f4923e");
+            }
+        });
+        $("button#start").on("click", function() {
+            $("#breakdown_container").toggle(200);
+        });
 
-})
-</script>
+    })
+    </script>
 {% endblock %}
-
-{% block content %}
-<div id="result_container">
-    <div id="presentation_container">
-        <h2 class="arena_text" id="header1">GAME OVER</h2>
-        <div id="hero">
-            <div class="portrait"></div>
-            <div class="frame"></div>
-        </div>
-        <h2 class="arena_text" id="header2">Your Results</h2>
-        <div class="arena_text" id="info">
-            <table id="score_table">
-                <tr>
-                    <td>Class:</td><td>{{ game['hero_class'] | title }}</td>
-                </tr>
-                <tr>
-                    <td>Time used:</td><td>{{ game['time_used'] }} seconds</td>
-                </tr>
-                <tr>
-                    <td>Total score:</td><td>{{ game['user_score'] }}</td>
-                </tr>
-            </table>
-            <button class="arena_text" id="breakdown">Draft breakdown</button>
-        </div>
-    </div>
-    <div id="breakdown_container">
-        <table id="pack_table">
-            <thead class="arena_text">
-                <th>Pick</th>
-                <th colspan="3">Choices</th>
-            </thead>
-        {% for options in game['draft'] %}
-            {% set pack = game['draft'][options] %}
-            <tr class="pack_row" id="pick_{{ options }}">
-                <td class="arena_text">
-                    <div class="pick_number">{{ options }}</div>
-                    <div class="no_pick"></div>
-                </td>
-                <td class="arena_text">
-                    <img src="http://hs.jwd.me/static/cards/{{ pack['1'] }}.png">
-                    <div class="card">
-                        <div>{{ game['card_scores'][pack['1']] }}</span>
-                        <div class="pick {{ pack['1'] }}"></div>
-                    </div>
-                </td>
-                <td class="arena_text">
-                    <img src="http://hs.jwd.me/static/cards/{{ pack['2'] }}.png">
-                    <div class="card">
-                        <div>{{ game['card_scores'][pack['2']] }}</span>
-                        <div class="pick {{ pack['2'] }}"></div>
-                    </div>
-                </td>
-                <td class="arena_text">
-                    <img src="http://hs.jwd.me/static/cards/{{ pack['3'] }}.png">
-                    <div class="card">
-                        <div>{{ game['card_scores'][pack['3']] }}</span>
-                        <div class=" pick {{ pack['3'] }}"></div>
-                    </div>
-                </td>
-            </tr>
-        {% endfor %}
-        </table>
-    </div>
     
-</div>
+    {% block content %}
+    <div id="result_container">
+        <div id="presentation_container">
+            <h2 class="arena_text" id="header1">GAME OVER</h2>
+            <div id="hero">
+                <div class="portrait"></div>
+                <div class="frame"></div>
+            </div>
+            {% if game['nickname'] > '' %}
+                <h2 class="arena_text" id="header2">{{ game['nickname'] }}'s Results</h2>
+            {% else %}
+                <h2 class="arena_text" id="header2">Results</h2>
+            {% endif %}
+            <div class="arena_text" id="info">
+                <table id="score_table">
+                    <tr>
+                        <td>Class:</td><td>{{ game['hero_class'] | title }}</td>
+                    </tr>
+                    <tr>
+                        <td>Time used:</td><td>{{ game['time_used'] }} seconds</td>
+                    </tr>
+                    <tr>
+                        <td>Total score:</td><td>{{ game['user_score'] }}</td>
+                    </tr>
+                </table>
+                <div class="start">
+                    <button class="arena_text" id="start">Review Draft</button>
+                </div>
+            </div>
+        </div>
+        <div id="list_container">
+            
+        </div>
+        <div id="breakdown_container">
+            <table id="pack_table">
+
+            {% for options in game['draft'] %}
+                {% set pack = game['draft'][options] %}
+                <tr class="pack_row" id="pick_{{ options }}">
+                    <td class="arena_text">
+                        <div class="pick_number">Turn {{ options }}</div>
+                    </td>
+                    <td class="arena_text">
+                        <img src="http://hs.jwd.me/static/cards/{{ pack['1'] }}.png">
+                        <div class="card">
+                            <div class="pick {{ pack['1'] }}">{{ game['card_scores'][pack['1']] }}</div>
+                        </div>
+                    </td>
+                    <td class="arena_text">
+                        <img src="http://hs.jwd.me/static/cards/{{ pack['2'] }}.png">
+                        <div class="card">
+                            <div class="pick {{ pack['2'] }}">{{ game['card_scores'][pack['2']] }}</div>
+                        </div>
+                    </td>
+                    <td class="arena_text">
+                        <img src="http://hs.jwd.me/static/cards/{{ pack['3'] }}.png">
+                        <div class="card">
+                            <div class=" pick {{ pack['3'] }}">{{ game['card_scores'][pack['3']] }}</div>
+                        </div>
+                    </td>
+                    <td class="arena_text">
+                        <div class="result"></div>
+                    </td>
+               </tr>
+            {% endfor %}
+            </table>
+        </div>
+        
+    </div>
 {% endblock %}
