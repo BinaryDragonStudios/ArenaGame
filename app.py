@@ -100,7 +100,7 @@ def get_scores (draft_class, c):
         scores = c.fetchall()
     except sqlite3.Error as error:
         app.logger.error('An error occured: ' + error)
-        return render_template('error.html', error = "Something went wrong while getting scores");   
+        return render_template('error.html', error = "Something went wrong while getting scores")   
     
     # Buffer card scores
     card_scores = {}
@@ -172,7 +172,6 @@ def draft():
         try:
             c.execute(sql, (random_class, pick_rarity, pick_rarity_2))
             rows = c.fetchall()
-            db.commit()
         except sqlite3.Error as error:
             app.logger.error(error)
             return render_template('error.html', error = "Something went wrong while creating game");   
@@ -206,7 +205,6 @@ def draft():
     """
     try:
         db.execute(sql_insert, (game_id, random_class, draft_json, math.floor(time.time())))
-        db.commit();
     except sqlite3.Error as error:
         app.logger.error(error)
         return render_template('error.html', error = "Something went wrong while creating game");   
@@ -222,11 +220,11 @@ def draft():
         for card in db_packs[pack]:
             try:
                 db.execute(sql_update, (db_packs[pack][card], random_class))
-                db.commit();
             except sqlite3.Error as error:
                 app.logger.error(error)
                 return render_template('error.html', error = "Something went wrong while creating game");  
-                
+
+    db.commit();            
     db.close()
 
     # Pass data to the template
@@ -363,7 +361,7 @@ def draftdone():
 def nickname():
     # Buffer data from POST
     game_id = request.form['game_id']
-    nickname_data = request.form['form_data']
+    nickname_data = request.form['nickname']
     nickname = nickname_data.split("=")[1]
     
     if len(nickname) > 20:
@@ -391,7 +389,7 @@ def nickname():
     return response
     
     
-@app.route("/result/<game_id>")
+@app.route("/result/<game_id>", methods=['POST', 'GET'])
 def result(game_id):
     # Establish db connection
     db = sqlite3.connect('game.sqlite')

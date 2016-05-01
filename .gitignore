@@ -1,4 +1,4 @@
-node_modules/
+static/
 *.swp
 npm-debug.log
 *.pyc

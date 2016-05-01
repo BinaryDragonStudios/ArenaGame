@@ -169,8 +169,8 @@ button#start {
 <div id="page_top">
     <div id="arena" class="arena_text"><a href="{{ url_for('index') }}">Arena Draft Game</a></div>
     <div id="menu" class="arena_text">
-        <a href="http://hs.jwd.me/draft">New Game</a> | 
-        <a href="http://hs.jwd.me/leaderboards">Leaderboards</a> |  <a href="http://hs.jwd.me/shoutouts">Shoutouts</a>
+        <a href="{{ url_for('draft') }}">New Game</a> | 
+        <a href="{{ url_for('leaderboards') }}">Leaderboards</a> |  <a href="{{ url_for('shoutouts') }}">Shoutouts</a>
     </div>
 </div>
 <!-- begin content -->
