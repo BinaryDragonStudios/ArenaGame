@@ -1,6 +1,0 @@
-{
-    "scripts": {
-        "start": "nodejs app.js",
-        "monitor": "nodemon app.js"
-    }
-}
