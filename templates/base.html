@@ -1,5 +1,6 @@
 <!doctype html>
 <head>
+<meta charset="utf-8">
 <title>{{ head_title }}</title>
 <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.12.2/jquery.min.js"></script>
 <link href='https://fonts.googleapis.com/css?family=Candal' rel='stylesheet' type='text/css'>
@@ -163,6 +164,22 @@ button#start {
 
 </style>
 {% block style %}{% endblock %}
+<script>
+var entityMap = {
+    "&": "&amp;",
+    "<": "&lt;",
+    ">": "&gt;",
+    '"': '&quot;',
+    "'": '&#39;',
+    "/": '&#x2F;'
+};
+
+function escapeHtml(string) {
+    return String(string).replace(/[&<>"'\/]/g, function (s) {
+        return entityMap[s];
+    });
+}
+</script>
 {% block script %}{% endblock %}
 </head>
 <body>

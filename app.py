@@ -1,4 +1,5 @@
 #!/usr/bin/env python2.7
+# -*- coding: utf-8 -*-
 
 ################################################################################
 # Imports
@@ -85,7 +86,7 @@ def get_url(hero):
     
     return {'url': card_image_url(card_game_id + index), 'x-offset': x_offset, 'y-offset': y_offset}
 
-def get_scores (draft_class, c):
+def get_card_scores (draft_class, c):
     
     # Define query
     scores_sql = """
@@ -244,7 +245,7 @@ def draftdone():
     # Buffer data from POST
     data = request.form
     
-    # Get the picks JSON 
+    # Get the picks JSON and make keys integer for sorting
     picks = {int(k):v for k,v in json.loads(data['picks']).items()}
 
     # ...and loop through then to update the pick counter in the scores table
@@ -275,41 +276,42 @@ def draftdone():
     try: 
         c.execute(sql_draft, (data['game_id'], ))
         row = c.fetchone()       
-        db.commit()
     except sqlite3.Error as error:
         app.logger.error(error)
 
     draft_unsorted  = {int(k):v for k,v in json.loads(row[0]).items()}
     draft           = collections.OrderedDict(sorted(draft_unsorted.items()))   
-    card_scores     = get_scores(data['draft_class'].lower(), c)
+    card_scores     = get_card_scores(data['draft_class'].lower(), c)
     
     # Compute user score
-    max_score = 0
-    pick_score = 0
-
+    max_score         = 0
+    pick_score        = 0
+    missed_pick_score = 0
+    
     for turn in draft:
         card_score_list = []
-    
+
         # Make a list of the card scores
         for choice in draft[turn]:
             card = str(draft[turn][choice])
-            card_score_list.append(card_scores[card])
+            card_score_list.append(int(card_scores[card]))
             
         # ...then get the highest sore in the list
-        best_card_score  = float(max(card_score_list))
-        worst_card_score = float(min(card_score_list))
-        max_score       += best_card_score
-    
-        # Test if user picked a card and add the value to the total pick score        
+        best_card_score  = max(card_score_list)
+        worst_card_score = min(card_score_list)
+
+        # Test if user picked a card and add the value to the total scores
         if picks_dict[turn]:            
-            pick_score  +=  float(card_scores[picks_dict[turn]])
+            max_score   += best_card_score
+            pick_score  +=  int(card_scores[picks_dict[turn]])
             
         # If user neglected to pick a card, the penalty is severe
         else:
-            pick_score  -= ( best_card_score - worst_card_score ) * 2
+            missed_pick_score  += (( best_card_score - worst_card_score ) * 2)
 
     # Draft score is set to best possible score minus what the user drafted
-    draft_score =  max_score - pick_score
+    app.logger.info('Max: ' + str(max_score) + ' Pick: ' + str(pick_score) + ' Missed: ' + str(missed_pick_score))
+    draft_score =  max_score - pick_score + missed_pick_score
 
     # The users total score is the draft score + time used.
     seconds     = round(float(data['time_used']) / 1000, 1)
@@ -327,7 +329,6 @@ def draftdone():
     try:
         c.execute(sql_scores)
         rows = c.fetchall()
-        db.commit()
     except sqlite3.Error as error:
         app.logger.error(error)
         return render_template('error.html', error = "Something went wrong while getting scores");   
@@ -360,9 +361,9 @@ def draftdone():
 @app.route("/nickname", methods=['POST'])
 def nickname():
     # Buffer data from POST
-    game_id = request.form['game_id']
-    nickname_data = request.form['nickname']
-    nickname = nickname_data.split("=")[1]
+    data = request.form
+    game_id = data['game_id']
+    nickname = data['nickname'].strip()
     
     if len(nickname) > 20:
         response = "Nickname too long"
@@ -430,12 +431,12 @@ def result(game_id):
     game['user_score']  = row[3]
     game['time_used']   = row[4]
     if(row[5] > ''):
-        game['nickname']= row[5]
+        game['nickname']= row[5].decode('utf-8')
     else:
         game['nickname']= ''
     game['picks']       = json.dumps(picks)
     game['draft']       = collections.OrderedDict(sorted(draft.items()))
-    game['card_scores'] = get_scores(game['hero_class'], c)
+    game['card_scores'] = get_card_scores(game['hero_class'], c)
     game['draft_json']  = json.dumps(game['draft'])
     game['scores_json'] = json.dumps(game['card_scores'])
     hero                = get_url(game['hero_class'])

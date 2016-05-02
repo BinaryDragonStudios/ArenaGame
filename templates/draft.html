@@ -120,7 +120,7 @@ li:before {
     display: inline-block;
     height: 20px;
     width: 20px;
-    background-image: url(http://hs.jwd.me/static/gem_blue.png);
+    background-image: url(static/gem_blue.png);
     background-size: contain; 
     background-repeat: no-repeat;
     margin-left: 2px;
@@ -262,7 +262,7 @@ $(document).ready(function () {
                 }
             )
             .done(function( made_leaderboards ) {
-                result_page = "http://hs.jwd.me/result/" + game_id;
+                result_page = "result/" + game_id;
                 if(made_leaderboards == "True") {
                     clearInterval(counter);
                     clearTimeout(timeout_id);
@@ -281,7 +281,7 @@ $(document).ready(function () {
                         ).show();
                     $("input#nickname").keyup( function(e) {
                         if( e.keyCode === 13 ) {
-                            $.post("{{ url_for('nickname') }}",{ game_id: game_id, nickname: $("input").serialize() })
+                            $.post("{{ url_for('nickname') }}",{ game_id: game_id, nickname: $("input").val() })
                             .done( function (response) {
                                 if(response == "OK") {
                                     window.location.replace( result_page );
@@ -293,7 +293,7 @@ $(document).ready(function () {
                         }
                     });
                     $("button#leaderboards").on( "click",  function () {
-                        $.post("{{ url_for('nickname') }}",{ game_id: game_id, nickname: $("input").serialize() })
+                        $.post("{{ url_for('nickname') }}",{ game_id: game_id, nickname: $("input").val() })
                         .done( function (response) {
                             if(response == "OK") {
                                 window.location.replace( result_page );
@@ -423,7 +423,7 @@ $(document).ready(function () {
                     data-cost="{{ pack[1]['card-cost'] }}" 
                     data-class="{{ pack[1]['card-class'] }}" 
                     data-rarity="{{ pack[1]['card-rarity'] }}" 
-                    src="http://hs.jwd.me/static/cards/{{ pack[1]['card-id'] }}.png">
+                    src="static/cards/{{ pack[1]['card-id'] }}.png">
                 <td><img 
                     class="pack_pick first" 
                     data-pick-number={{ loop.index }} 
@@ -432,7 +432,7 @@ $(document).ready(function () {
                     data-cost="{{ pack[2]['card-cost'] }}" 
                     data-class="{{ pack[2]['card-class'] }}" 
                     data-rarity="{{ pack[2]['card-rarity'] }}" 
-                    src="http://hs.jwd.me/static/cards/{{ pack[2]['card-id'] }}.png">
+                    src="static/cards/{{ pack[2]['card-id'] }}.png">
                 <td><img 
                     class="pack_pick first" 
                     data-pick-number={{ loop.index }} 
@@ -441,7 +441,7 @@ $(document).ready(function () {
                     data-cost="{{ pack[3]['card-cost'] }}" 
                     data-class="{{ pack[3]['card-class'] }}" 
                     data-rarity="{{ pack[3]['card-rarity'] }}" 
-                    src="http://hs.jwd.me/static/cards/{{ pack[3]['card-id'] }}.png">
+                    src="static/cards/{{ pack[3]['card-id'] }}.png">
             </tr>
         {% endfor %}
         </table>

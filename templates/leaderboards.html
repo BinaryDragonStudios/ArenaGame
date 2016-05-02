@@ -142,7 +142,7 @@ span.score{
         
         $.each(leaderboard_week, function(i, val) {
             $("td#week ul.leaderboard").append("<li 'data-content'= '' id='"+val['game_id']+"' class='"+val['game_class']+"' title='Open game'>" +
-                                "<span class='nickname arena_text'>"+val['nickname']+"</span>" +
+                                "<span class='nickname arena_text'>"+escapeHtml(val['nickname'])+"</span>" +
                                 "<span class='score arena_text'>"+val['score']+"</span>" +
                               "</li>")
         })
@@ -151,7 +151,7 @@ span.score{
 
         $.each(leaderboard_month, function(i, val) {
             $("td#month ul.leaderboard").append("<li 'data-content'= '' id='"+val['game_id']+"' class='"+val['game_class']+"' title='Open game'>" +
-                                "<span class='nickname arena_text'>"+val['nickname']+"</span>" +
+                                "<span class='nickname arena_text'>"+escapeHtml(val['nickname'])+"</span>" +
                                 "<span class='score arena_text'>"+val['score']+"</span>" +
                               "</li>")
         })
@@ -160,7 +160,7 @@ span.score{
 
         $.each(leaderboard_alltime, function(i, val) {
             $("td#alltime ul.leaderboard").append("<li 'data-content'= '' id='"+val['game_id']+"' class='"+val['game_class']+"' title='Open game'>" +
-                                "<span class='nickname arena_text'>"+val['nickname']+"</span>" +
+                                "<span class='nickname arena_text'>"+escapeHtml(val['nickname'])+"</span>" +
                                 "<span class='score arena_text'>"+val['score']+"</span>" +
                               "</li>")
             $("li:nth-child("+i+")").attr('data-content', '\xa0'+(i-1).toString());

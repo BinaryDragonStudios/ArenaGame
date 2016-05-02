@@ -48,11 +48,15 @@ tr.pack_row td {
     width: 20%;
 }
 
- tr.pack_row .card {
+tr.pack_row .card {
     padding-bottom: 10px;
     margin-top: -45px;
 }
 
+tr#total_score td {
+    padding-top: 20px;
+    color: #f4923e;
+}
 
 td img {
     position: relative;
@@ -61,6 +65,9 @@ td img {
     width: 250px;
 }
 
+button#start {
+    margin-top: 10px;
+}
 
     </style>
 {% endblock %}
@@ -68,33 +75,45 @@ td img {
 {% block script %}
     <script>
     $(document).ready(function () {
+        var draft_score = 0;
+        var missed_score = 0;
         draft = JSON.parse({{ game['draft_json'] | tojson | safe }});
         picks = JSON.parse({{ game['picks'] | tojson | safe }});
         scores = JSON.parse({{ game['scores_json'] | tojson | safe }});
         $.each(picks, function(i, val) {
             max_score = Math.max(scores[draft[i.toString()]['1']], scores[draft[i.toString()]['2']], scores[draft[i.toString()]['3']])
             min_score = Math.min(scores[draft[i.toString()]['1']], scores[draft[i.toString()]['2']], scores[draft[i.toString()]['3']])
+            red = "#ff0625";
+            orange = "#f4923e";
+            yellow = "#ff0";
+            green = "#1b9711";
             if(val > '') {
-                //$("tr#pick_"+i+" ."+val).append("<br />Your pick");
                 pick_score = scores[val];
                 score = max_score - pick_score;
-                if(score > 0) {
-                    $("tr#pick_"+i+" .result").html("Penalty:<br />+ " + score).css("color", "#ff0"); // yellow
-                    $("tr#pick_"+i+" ."+val).css("color", "#ff0625");
-                    if(score > 15) {
-                        $("tr#pick_"+i+" .result").html("Penalty:<br />+ " + score).css("color", "#f4923e"); // orange
-                    } 
-                    if(score > 30) {
-                        $("tr#pick_"+i+" .result").html("Penalty:<br />+ " + score).css("color", "#ff0625"); // red
-                    }
+                draft_score += score;
+                $("tr#pick_"+i+" ."+val).css("color", red);
+                if (score > 30) {
+                    color = red;
+                } else if (score > 15) {
+                    color = orange;
+                } else if (score > 0) {
+                    color = yellow;
                 } else {
-                    $("tr#pick_"+i+" .result").html("Good job!").css("color", "#1b9711"); // green
-                    $("tr#pick_"+i+" ."+val).css("color", "#1b9711");
+                    color = green;
+                    $("tr#pick_"+i+" ."+val).css("color", green);
                 }
+                $("tr#pick_"+i+" .result").html("Penalty:<br />+ " + score).css("color", color);   
             } else {
-                $("tr#pick_"+i+" .result").html("No pick! <br />+" + 2*(max_score - min_score)).css("color", "#f4923e");
+                penalty = 2*(max_score - min_score);
+                if(penalty > 30) {
+                    $("tr#pick_"+i+" .result").html("No pick! <br />+" + penalty).css("color", red);
+                } else {
+                    $("tr#pick_"+i+" .result").html("No pick! <br />+" + penalty).css("color", orange); 
+                }
+                missed_score += penalty;
             }
         });
+        $("td#draft_score").html(draft_score + missed_score);
         $("button#start").on("click", function() {
             $("#breakdown_container").toggle(200);
         });
@@ -122,9 +141,12 @@ td img {
                         <td>Class:</td><td>{{ game['hero_class'] | title }}</td>
                     </tr>
                     <tr>
-                        <td>Time used:</td><td>{{ game['time_used'] }} seconds</td>
+                        <td>Draft score:</td><td id="draft_score"></td>
                     </tr>
                     <tr>
+                        <td>Time used:</td><td>{{ game['time_used'] }} seconds</td>
+                    </tr>
+                    <tr id="total_score">
                         <td>Total score:</td><td>{{ game['user_score'] }}</td>
                     </tr>
                 </table>
