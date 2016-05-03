@@ -17,6 +17,9 @@ img {
     z-index: -1;
     width: 228px;
     position: absolute;
+    border: 1px solid #ddd;
+    border-radius: 3px;
+    box-shadow: -10px 10px 5px #999;
 }
 
 #hero,
@@ -66,9 +69,7 @@ table#pack_table {
 }
 
 button#start {
-    font-size: 2em;
     width: 200px;
-    background-color: #f4923e;
 }
 
 .pack_pick {
@@ -87,8 +88,8 @@ ul#draft_list {
     list-style: none;
     font-size: 0.8em;
     padding: 0;
-    margin-top: 1px;
-    margin-left: 3px;
+    margin: 3px;
+    min-height: 715px;
 }
 
 ul#draft_list li {
@@ -401,9 +402,9 @@ $(document).ready(function () {
         <div class="arena_text" id="info">
             <ul id="rules">
                 <li><span class="rule">The game consists of 30 turns</span></li>
-                <li><span class="rule">You get 3 cards to choose from each turn</span></li>
-                <li><span class="rule">Each turn you have 5 seconds to make your decision</span></li>
-                <li><span class="rule">Your goal each turn is to pick the card with the highest value</span></li>
+                <li><span class="rule">Each turn, you get 3 cards to choose from</span></li>
+                <li><span class="rule">Your goal is to pick the card with the highest value</span></li>
+                <li><span class="rule">You have 5 seconds to make your decision</span></li>
                 <li><span class="rule">Your total score is decided by your decisions and total time used</span></li>
             </ul>
             <div class="start">

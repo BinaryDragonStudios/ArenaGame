@@ -41,7 +41,7 @@ classes = [
 # Helper Functions
 ################################################################################
 def card_image_url(card_game_id):
-    return "http://hs.jwd.me/static/" + card_game_id + ".png"
+    return "http://highwind.tv/static/" + card_game_id + ".png"
 
 def select_rarity(rare_gauranteed):
     roll = randint(1,100)
@@ -209,21 +209,6 @@ def draft():
     except sqlite3.Error as error:
         app.logger.error(error)
         return render_template('error.html', error = "Something went wrong while creating game");   
-    
-    # Update the offer counter for the cards in the score table
-    sql_update = """
-        UPDATE scores 
-        SET offer_counter = (SELECT offer_counter + 1) 
-        WHERE card_game_id = ? 
-        AND draft_class = ?;
-    """
-    for pack in db_packs:
-        for card in db_packs[pack]:
-            try:
-                db.execute(sql_update, (db_packs[pack][card], random_class))
-            except sqlite3.Error as error:
-                app.logger.error(error)
-                return render_template('error.html', error = "Something went wrong while creating game");  
 
     db.commit();            
     db.close()
@@ -238,51 +223,59 @@ def draft():
 
 @app.route("/draftdone", methods=['POST'])
 def draftdone():
+    # Buffer data from POST
+    data = request.form
+
     # Establish db connection
     db = sqlite3.connect('game.sqlite')
     c = db.cursor()
     
-    # Buffer data from POST
-    data = request.form
+    # Get the scores for the cards
+    card_scores     = get_card_scores(data['draft_class'].lower(), c)
     
-    # Get the picks JSON and make keys integer for sorting
+    # Get the picks JSON and make keys integer
     picks = {int(k):v for k,v in json.loads(data['picks']).items()}
 
-    # ...and loop through then to update the pick counter in the scores table
+    # ...and loop through then to make a dict with the turn number as index
     picks_dict = {}
-    sql_update_scores = """
-        UPDATE scores 
-        SET pick_counter = (SELECT pick_counter + 1) 
-        WHERE card_game_id = ? 
-        AND draft_class = ?;
-        """
     for pick in picks:
         turn             = int(picks[pick]['pick-number'])
         card_id          = picks[pick]['card-id']
         picks_dict[turn] = card_id
-        c.execute(sql_update_scores, (card_id, data['draft_class'].lower()))
 
-    try: 
-        db.commit()
-    except sqlite3.Error as error:
-        app.logger.error(error)
-    
     # Get the draft JSON
     sql_draft = """
         SELECT draft_json, game_class 
         FROM games 
         WHERE game_id = ?;        
     """
-    try: 
+    try:
         c.execute(sql_draft, (data['game_id'], ))
-        row = c.fetchone()       
+        row = c.fetchone()
     except sqlite3.Error as error:
         app.logger.error(error)
+        return render_template('error.html', error = "Something went wrong while getting game")
 
+    # cast the keys in the draft to int, then sort the dictionary
     draft_unsorted  = {int(k):v for k,v in json.loads(row[0]).items()}
-    draft           = collections.OrderedDict(sorted(draft_unsorted.items()))   
-    card_scores     = get_card_scores(data['draft_class'].lower(), c)
+    draft           = collections.OrderedDict(sorted(draft_unsorted.items()))
     
+    # Update pick counter in the scores table
+    sql_update_pick_counter = """
+        UPDATE scores 
+        SET pick_counter = (SELECT pick_counter + 1) 
+        WHERE card_game_id = ? 
+        AND draft_class = ?;
+        """
+
+    # Update offer counter in the scores table
+    sql_update_offer_counter = """
+        UPDATE scores 
+        SET offer_counter = (SELECT offer_counter + 1) 
+        WHERE card_game_id = ? 
+        AND draft_class = ?;
+        """
+
     # Compute user score
     max_score         = 0
     pick_score        = 0
@@ -290,32 +283,62 @@ def draftdone():
     
     for turn in draft:
         card_score_list = []
+        card_picked = picks_dict[turn]
 
         # Make a list of the card scores
         for choice in draft[turn]:
+            # make a list of the 3 scores from the pack oddered
             card = str(draft[turn][choice])
             card_score_list.append(int(card_scores[card]))
             
-        # ...then get the highest sore in the list
+            # Update scores table offer counter
+            c.execute(sql_update_offer_counter, (card, data['draft_class'].lower()))
+
+        # ...then get the highest and lowest score in the list
         best_card_score  = max(card_score_list)
         worst_card_score = min(card_score_list)
 
         # Test if user picked a card and add the value to the total scores
-        if picks_dict[turn]:            
+        if card_picked:
+            # Increase the max possible score
             max_score   += best_card_score
-            pick_score  +=  int(card_scores[picks_dict[turn]])
+
+            # Increase the pick score
+            pick_score  +=  int(card_scores[card_picked])
+
+            # Update scores table pick counter
+            c.execute(sql_update_pick_counter, (card_picked, data['draft_class'].lower()))
             
         # If user neglected to pick a card, the penalty is severe
         else:
             missed_pick_score  += (( best_card_score - worst_card_score ) * 2)
 
+    # Commit the updates to scores table
+    try: 
+        db.commit()
+    except sqlite3.Error as error:
+        app.logger.error(error)
+        return render_template('error.html', error = "Something went wrong while updating some statistics")
+
     # Draft score is set to best possible score minus what the user drafted
-    app.logger.info('Max: ' + str(max_score) + ' Pick: ' + str(pick_score) + ' Missed: ' + str(missed_pick_score))
-    draft_score =  max_score - pick_score + missed_pick_score
+    draft_score =  (max_score - pick_score) + missed_pick_score
 
     # The users total score is the draft score + time used.
     seconds     = round(float(data['time_used']) / 1000, 1)
     user_score  = draft_score + seconds
+
+    # Update the games table with the selected cards, time used, score and date
+    sql_update = """
+        UPDATE games 
+        SET picks_json = ?, time_used = ?, score = ? 
+        WHERE game_id = ?;
+    """
+    try:
+        c.execute(sql_update, (json.dumps(picks_dict), seconds, user_score, data['game_id']))
+        db.commit()
+    except sqlite3.Error as error:
+        app.logger.error(error)
+        return render_template('error.html', error = "Something went wrong while saving game")
     
     # Check if user earned a spot on the leaderboards
     sql_scores = """
@@ -335,24 +358,13 @@ def draftdone():
    
     made_leaderboards = "False"
 
+    #If there are less the 10 entries in the leaderboeard, the user made it
     if len(rows) < 10:
         made_leaderboards = "True"
+    # If user score is less than the highest score, the user made it
     elif user_score < rows[len(rows)-1][0]:
         made_leaderboards = "True"
-        
-    # Update the games table with the selected cards, time used, score and date
-    sql_update = """
-        UPDATE games 
-        SET picks_json = ?, time_used = ?, score = ? 
-        WHERE game_id = ?;
-    """
-    try:
-        c.execute(sql_update, (json.dumps(picks_dict), seconds, user_score, data['game_id']))
-        db.commit()
-    except sqlite3.Error as error:
-        app.logger.error(error)
-        return render_template('error.html', error = "Something went wrong while creating game");   
-        
+
     db.close()
     
     # Return the game id to front-end
@@ -458,96 +470,90 @@ def leaderboards():
     db.text_factory = str
     c = db.cursor()
         
-    # Database query to get scores withing chosen period
+    # Get tom ten scores within last 7 days
     sql_query_week = """
         SELECT game_id, nickname, score, game_class 
         FROM games 
-        WHERE datetime(date, 'unixepoch')  > datetime('now', '-7 days')   
-        ORDER BY score;
+        WHERE datetime(date, 'unixepoch')  > datetime('now', '-7 days') 
+        AND nickname > '' 
+        AND score > 0
+        ORDER BY score
+        LIMIT 10;
     """   
+    try:
+        c.execute(sql_query_week)
+        rows_week = c.fetchall()
+    except sqlite3.Error as error:
+        app.logger.error(error)
+        return render_template('error.html', error = "Couldn't load leaderboards");
+
+    i = 1
+    leaderboard_week = {}
+    for row in rows_week:
+        entry = {}
+        entry['game_id']    = row[0]
+        entry['nickname']   = row[1]
+        entry['score']      = row[2]
+        entry['game_class'] = row[3]
+        leaderboard_week[i] = entry
+        i += 1
+            
+    # Get top ten scores within last 30 days
     sql_query_month = """
         SELECT game_id, nickname, score, game_class 
         FROM games 
         WHERE datetime(date, 'unixepoch')  > datetime('now', '-30 days')   
-        ORDER BY score;
-    """
-    
-    sql_query_alltime = """
-        SELECT game_id, nickname, score, game_class 
-        FROM games 
-        WHERE datetime(date, 'unixepoch')  > datetime('0000000000', 'unixepoch')   
-        ORDER BY score;
-    """
-
-    try:
-        c.execute(sql_query_week)
-        rows_week = c.fetchall()
-        db.commit()
-    except sqlite3.Error as error:
-        app.logger.error(error)
-        return render_template('error.html', error = "Couldn't load weekly leaderboard");
-
+        AND nickname > '' 
+        AND score > 0
+        ORDER BY score
+        LIMIT 10;
+    """    
     try:
         c.execute(sql_query_month)
         rows_month = c.fetchall()
-        db.commit()
-    except sqlite3.Error as error:
-        app.logger.error(error)
-        return render_template('error.html', error = "Couldn't load leaderboard from last 30 days");
-
-    try:
-        c.execute(sql_query_alltime)
-        rows_alltime = c.fetchall()
-        db.commit()
     except sqlite3.Error as error:
         app.logger.error(error)
         return render_template('error.html', error = "Couldn't load leaderboards");
-        
-    leaderboard_week = {}
-    i = 0
-     
-    for row in rows_week:
-        entry = {}
-        if (row[1] > '' and row[2] > 0):
-            i +=1
-            entry['game_id']    = row[0]
-            entry['nickname']   = row[1]
-            entry['score']      = row[2]
-            entry['game_class'] = row[3]
-            leaderboard_week[i] = entry;
-        if i == 10:
-            break
-            
-    leaderboard_month = {}
-    i = 0
 
+    i = 1
+    leaderboard_month = {}
     for row in rows_month:
         entry = {}
-        if (row[1] > '' and row[2] > 0):
-            i +=1
-            entry['game_id']     = row[0]
-            entry['nickname']    = row[1]
-            entry['score']       = row[2]
-            entry['game_class']  = row[3]
-            leaderboard_month[i] = entry;
-        if i == 10:
-            break
+        entry['game_id']     = row[0]
+        entry['nickname']    = row[1]
+        entry['score']       = row[2]
+        entry['game_class']  = row[3]
+        leaderboard_month[i] = entry
+        i += 1
             
-    leaderboard_alltime = {}
-    i = 0
+    # Get top ten scores from all time
+    sql_query_alltime = """
+        SELECT game_id, nickname, score, game_class 
+        FROM games 
+        WHERE nickname > '' 
+        AND score > 0
+        ORDER BY score
+        LIMIT 10;
+    """
+    try:
+        c.execute(sql_query_alltime)
+        rows_alltime = c.fetchall()
+    except sqlite3.Error as error:
+        app.logger.error(error)
+        return render_template('error.html', error = "Couldn't load leaderboards");
 
+    i = 1
+    leaderboard_alltime = {}
     for row in rows_alltime:
         entry = {}
-        if (row[1] > '' and row[2] > 0):
-            i +=1
-            entry['game_id']       = row[0]
-            entry['nickname']      = row[1]
-            entry['score']         = row[2]
-            entry['game_class']    = row[3]
-            leaderboard_alltime[i] = entry;
-        if i == 10:
-            break
-        
+        entry['game_id']       = row[0]
+        entry['nickname']      = row[1]
+        entry['score']         = row[2]
+        entry['game_class']    = row[3]
+        leaderboard_alltime[i] = entry
+        i += 1
+    
+    # Pass the scores to the template
     return render_template('leaderboards.html', 
         leaderboard_week    = json.dumps(leaderboard_week), 
         leaderboard_month   = json.dumps(leaderboard_month), 
@@ -634,4 +640,3 @@ if __name__ == "__main__":
 
     # Start the server on default port (5000)
     app.run(host = flask_host, port = flask_port)
-

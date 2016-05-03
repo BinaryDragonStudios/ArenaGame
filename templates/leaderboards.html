@@ -85,7 +85,7 @@ ul.leaderboard li:before {
     display: inline-block;
     height: 24px;
     width: 24px;
-    background-image: url(http://hs.jwd.me/static/gem_common.png);
+    background-image: url(static/gem_common.png);
     background-size: contain; 
     background-repeat: no-repeat;
     margin: 0 2px 1px 5px;
@@ -93,15 +93,15 @@ ul.leaderboard li:before {
 }
 
 #alltime ul.leaderboard li:before {
-    background-image: url(http://hs.jwd.me/static/gem_legendary.png);
+    background-image: url(static/gem_legendary.png);
 }
 
 #month ul.leaderboard li:before {
-    background-image: url(http://hs.jwd.me/static/gem_epic.png);
+    background-image: url(static/gem_epic.png);
 }
 
 #week ul.leaderboard li:before {
-    background-image: url(http://hs.jwd.me/static/gem_rare.png);
+    background-image: url(static/gem_rare.png);
 }
 
 span.score,
@@ -121,6 +121,12 @@ span.score{
     margin-left: -2px;
     padding: 1px 6px;
     border-radius: 2px;   
+}
+
+.beta {
+    margin: auto;
+    text-align: center;
+    font-size: 0.7em;
 }
 
 </style>
@@ -174,7 +180,7 @@ span.score{
 
         $('.leaderboard li:not(.header)').on('click', function() {
             game_id = $(this).attr('id');
-            window.location.replace( "http://hs.jwd.me/result/" + game_id );
+            window.location.replace( "result/" + game_id );
         });
     })
 </script>
@@ -195,6 +201,7 @@ span.score{
                 <tr class="boards">
                  </tr>
             </table>
-        </u>
+            <div class="beta">The scores may be wiped several times before the game goes live</div>
+        </div>
     </div>
 {% endblock %}

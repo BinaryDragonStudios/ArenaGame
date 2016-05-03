@@ -1,4 +1,3 @@
-static/
 *.swp
 npm-debug.log
 *.pyc

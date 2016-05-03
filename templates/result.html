@@ -91,18 +91,23 @@ button#start {
                 pick_score = scores[val];
                 score = max_score - pick_score;
                 draft_score += score;
+                color='';
                 $("tr#pick_"+i+" ."+val).css("color", red);
+                if (score > 0) {
+                    color = yellow;
+                }
+                if (score > 15) {
+                    color = orange;
+                } 
                 if (score > 30) {
                     color = red;
-                } else if (score > 15) {
-                    color = orange;
-                } else if (score > 0) {
-                    color = yellow;
-                } else {
+                } 
+                $("tr#pick_"+i+" .result").html("Penalty<br />+ " + score).css("color", color);   
+                if (score == 0) {
                     color = green;
+                    $("tr#pick_"+i+" .result").html("Good job!").css("color", color);   
                     $("tr#pick_"+i+" ."+val).css("color", green);
                 }
-                $("tr#pick_"+i+" .result").html("Penalty:<br />+ " + score).css("color", color);   
             } else {
                 penalty = 2*(max_score - min_score);
                 if(penalty > 30) {
@@ -168,19 +173,19 @@ button#start {
                         <div class="pick_number">Turn {{ options }}</div>
                     </td>
                     <td class="arena_text">
-                        <img src="http://hs.jwd.me/static/cards/{{ pack['1'] }}.png">
+                        <img src="{{ url_for('static', filename='cards/') }}{{ pack['1'] }}.png">
                         <div class="card">
                             <div class="pick {{ pack['1'] }}">{{ game['card_scores'][pack['1']] }}</div>
                         </div>
                     </td>
                     <td class="arena_text">
-                        <img src="http://hs.jwd.me/static/cards/{{ pack['2'] }}.png">
+                        <img src="{{ url_for('static', filename='cards/') }}{{ pack['2'] }}.png">
                         <div class="card">
                             <div class="pick {{ pack['2'] }}">{{ game['card_scores'][pack['2']] }}</div>
                         </div>
                     </td>
                     <td class="arena_text">
-                        <img src="http://hs.jwd.me/static/cards/{{ pack['3'] }}.png">
+                        <img src="{{ url_for('static', filename='cards/') }}{{ pack['3'] }}.png">
                         <div class="card">
                             <div class=" pick {{ pack['3'] }}">{{ game['card_scores'][pack['3']] }}</div>
                         </div>
