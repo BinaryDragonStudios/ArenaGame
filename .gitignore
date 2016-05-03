@@ -1,3 +1,4 @@
+*.sqlite
 *.swp
 npm-debug.log
 *.pyc
