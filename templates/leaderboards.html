@@ -30,6 +30,8 @@ ul.leaderboard {
     padding: 0;
     margin-top: 1px;
     margin-left: 3px;
+    position: absolute;
+    width: 270px;
 }
 
 ul.leaderboard li {
@@ -54,16 +56,16 @@ ul.leaderboard li.header {
     cursor: default;
 }
 
+#day ul.leaderboard li.header {
+    background-color: #eee;
+}
+
 #week ul.leaderboard li.header {
     background-color: #7ecbfe;
 }
 
 #month ul.leaderboard li.header {
     background-color: #fe64fc;
-}
-
-#alltime ul.leaderboard li.header {
-    background-color: #f4923e;
 }
 
 ul.leaderboard li.header:before {
@@ -92,16 +94,12 @@ ul.leaderboard li:before {
     vertical-align: middle;
 }
 
-#alltime ul.leaderboard li:before {
-    background-image: url(static/gem_legendary.png);
+#week ul.leaderboard li:before {
+    background-image: url(static/gem_rare.png);
 }
 
 #month ul.leaderboard li:before {
     background-image: url(static/gem_epic.png);
-}
-
-#week ul.leaderboard li:before {
-    background-image: url(static/gem_rare.png);
 }
 
 span.score,
@@ -129,21 +127,41 @@ span.score{
     font-size: 0.7em;
 }
 
+.arena_text.beta {
+    padding-top: 325px;
+    width: 75%;
+}
+
 </style>
 {% endblock %}
 {% block script %}
 <script>
     $(document).ready(function () {
+        leaderboard_day     = JSON.parse({{ leaderboard_day | tojson | safe }});
         leaderboard_week    = JSON.parse({{ leaderboard_week | tojson | safe }});
         leaderboard_month   = JSON.parse({{ leaderboard_month | tojson | safe }});
-        leaderboard_alltime = JSON.parse({{ leaderboard_alltime | tojson | safe }});
-        
-        cols = ['week', 'month', 'alltime'];
+        var today = new Date();
+        cols = ['day', 'week', 'month'];
         
         for (i = 0; i < 3; i++) {
             $("#score_table tr.boards").append("<td id='"+cols[i]+"'><ul class='leaderboard'></ul></td>");
         }
         
+        $("td#day ul.leaderboard").append("<li class='header'>Today, "+today.getDate()+"."+(today.getMonth()+1)+"."+today.getFullYear()+"</li>");
+
+        $.each(leaderboard_day, function(i, val) {
+            $("td#day ul.leaderboard").append("<li 'data-content'= '' id='"+val['game_id']+"' class='"+val['game_class']+"' title='Open game'>" +
+                                "<span class='nickname arena_text'>"+escapeHtml(val['nickname'])+"</span>" +
+                                "<span class='score arena_text'>"+val['score']+"</span>" +
+                              "</li>")
+             $("#day li:nth-child("+i+")").attr('data-content', '\xa0'+(i-1).toString());
+            placement = i.toString();
+            if (i < 10) {
+                placement = '\xa0'+i.toString();
+            }
+            $("#day li:last-child").attr('data-content', placement);
+       })
+
         $("td#week ul.leaderboard").append("<li class='header'>Last 7 days</li>");
         
         $.each(leaderboard_week, function(i, val) {
@@ -151,6 +169,12 @@ span.score{
                                 "<span class='nickname arena_text'>"+escapeHtml(val['nickname'])+"</span>" +
                                 "<span class='score arena_text'>"+val['score']+"</span>" +
                               "</li>")
+            $("#week li:nth-child("+i+")").attr('data-content', '\xa0'+(i-1).toString());
+            placement = i.toString();
+            if (i < 10) {
+                placement = '\xa0'+i.toString();
+            }
+            $("#week li:last-child").attr('data-content', placement);
         })
         
         $("td#month ul.leaderboard").append("<li class='header'>Last 30 days</li>");
@@ -160,23 +184,13 @@ span.score{
                                 "<span class='nickname arena_text'>"+escapeHtml(val['nickname'])+"</span>" +
                                 "<span class='score arena_text'>"+val['score']+"</span>" +
                               "</li>")
-        })
-         
-        $("td#alltime ul.leaderboard").append("<li class='header'>All time</li>");
-
-        $.each(leaderboard_alltime, function(i, val) {
-            $("td#alltime ul.leaderboard").append("<li 'data-content'= '' id='"+val['game_id']+"' class='"+val['game_class']+"' title='Open game'>" +
-                                "<span class='nickname arena_text'>"+escapeHtml(val['nickname'])+"</span>" +
-                                "<span class='score arena_text'>"+val['score']+"</span>" +
-                              "</li>")
-            $("li:nth-child("+i+")").attr('data-content', '\xa0'+(i-1).toString());
+            $("#month li:nth-child("+i+")").attr('data-content', '\xa0'+(i-1).toString());
             placement = i.toString();
             if (i < 10) {
                 placement = '\xa0'+i.toString();
             }
-            $("li:last-child").attr('data-content', placement);
+            $("#month li:last-child").attr('data-content', placement);
         })
-
 
         $('.leaderboard li:not(.header)').on('click', function() {
             game_id = $(this).attr('id');
@@ -199,9 +213,9 @@ span.score{
                     <th colspan="3">Click on an entry to get draft breakdown</th>
                 </tr>
                 <tr class="boards">
-                 </tr>
+                </tr>
             </table>
-            <div class="beta">The scores may be wiped several times before the game goes live</div>
+            <div class="arena_text beta">*The scores may be wiped several times before the game goes live</div>
         </div>
     </div>
 {% endblock %}
