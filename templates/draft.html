@@ -7,7 +7,7 @@ img {
 }
 
 #page_top {
-    width: 1300px;
+    width: 1302px;
 }
 
 #draft_container {
@@ -24,9 +24,11 @@ img {
     float: right;
     z-index: -1;
     width: 228px;
-    border: 1px solid #ddd;
+    border: 1px solid #6e4a32;
     border-radius: 5px;
     box-shadow: -10px 10px 5px #999;
+    background-color: #fae7c5;
+
 }
 
 #hero,
@@ -96,7 +98,7 @@ ul#draft_list {
     font-size: 0.8em;
     padding: 0;
     margin: 3px;
-    min-height: 715px;
+    min-height: 717px;
 }
 
 ul#draft_list li {
@@ -248,10 +250,7 @@ $(document).ready(function () {
             // hide/make sure all rows are hidden 
             $("tr.pack_row:nth-child(" + (count-1).toString() + ")").hide(0, function(){ 
                 // show only the next row
-                $("tr.pack_row:nth-child(" + count.toString() + ")").show(300, function(){ 
-                    // once row is visible rebind card_on_press function
-                    // $(".pack_pick").click = card_on_press
-                })
+                $("tr.pack_row:nth-child(" + count.toString() + ")").show(300)
             })
         } else {
             var end_time = $.now();
@@ -299,7 +298,7 @@ $(document).ready(function () {
                             });
                         }
                     });
-                    $("button#leaderboards").on( "click",  function () {
+                    $("button#leaderboards").mouseup( function () {
                         $.post("{{ url_for('nickname') }}",{ game_id: game_id, nickname: $("input").val() })
                         .done( function (response) {
                             if(response == "OK") {
@@ -348,7 +347,7 @@ $(document).ready(function () {
     $("tr").hide(0);
     $("tr:first").show(100);
     $("#draft_container").show(500);
-    $("button#start").on("click", function() {
+    $("button#start").mouseup( function() {
         $("#info").hide();
         $("#hero, #gem").css('visibility', 'visible');
         $("#header1").html("Now drafting {{ hero_class }}")
@@ -358,7 +357,7 @@ $(document).ready(function () {
         start_countdown_timer(0, pick_array);
     });
     
-    $(".pack_pick").on("click", function() {
+    $(".pack_pick").mouseup( function() {
         if($.inArray($(this).attr('data-pick-number'), pick_numbers ) == -1) {
             pick_numbers.push($(this).attr('data-pick-number'))
             card_on_press($(this),pick_array);

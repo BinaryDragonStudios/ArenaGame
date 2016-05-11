@@ -110,6 +110,38 @@ def get_card_scores (draft_class, c):
         
     return card_scores
 
+def get_leaderboard (duration, c):
+    # Get tom ten scores within duration
+    sql_query_day = """
+        SELECT game_id, nickname, score, game_class 
+        FROM games 
+        WHERE datetime(date, 'unixepoch')  > datetime('now','""" + duration + """') 
+        AND nickname > '' 
+        AND score > 0
+        ORDER BY score
+        LIMIT 10;
+    """   
+    try:
+        c.execute(sql_query_day)
+        rows = c.fetchall()
+    except sqlite3.Error as error:
+        app.logger.error(error)
+        return render_template('error.html', error = "Couldn't load leaderboard");
+
+    i = 1
+    leaderboard = {}
+    for row in rows:
+        entry = {}
+        entry['game_id']    = row[0]
+        entry['nickname']   = row[1]
+        entry['score']      = row[2]
+        entry['game_class'] = row[3]
+        leaderboard[i] = entry
+        i += 1
+        
+    return leaderboard
+    
+    
 ################################################################################
 # Routes
 ################################################################################
@@ -341,28 +373,15 @@ def draftdone():
         return render_template('error.html', error = "Something went wrong while saving game")
     
     # Check if user earned a spot on the leaderboards
-    sql_scores = """
-        SELECT score 
-        FROM games 
-        WHERE score > 0 
-        AND nickname > '' 
-        ORDER BY score LIMIT 10;
-    """
-    
-    try:
-        c.execute(sql_scores)
-        rows = c.fetchall()
-    except sqlite3.Error as error:
-        app.logger.error(error)
-        return render_template('error.html', error = "Something went wrong while getting scores");   
-   
-    made_leaderboards = "False"
+    made_leaderboards   = "False"
+    duration            = 'start of day';
+    leaderboards_day    = get_leaderboard(duration, c)
 
-    #If there are less the 10 entries in the leaderboeard, the user made it
-    if len(rows) < 10:
+    #If there are less the 10 entries in the leaderboeard from today, the user made it
+    if len(leaderboards_day) < 10:
         made_leaderboards = "True"
-    # If user score is less than the highest score, the user made it
-    elif user_score < rows[len(rows)-1][0]:
+    # Or, if user's score is less than the highest score, the user made it
+    elif user_score < leaderboards_day[10]['score']:
         made_leaderboards = "True"
 
     db.close()
@@ -420,7 +439,6 @@ def result(game_id):
     try:
         c.execute(game_sql, (game_id, ))
         row = c.fetchone()
-        db.commit()
         
     # Log if errors
     except sqlite3.Error as error:
@@ -453,7 +471,7 @@ def result(game_id):
     game['scores_json'] = json.dumps(game['card_scores'])
     hero                = get_url(game['hero_class'])
     
-    db.commit()
+    # Close database connection
     db.close()
 
     # Pass data to template
@@ -470,94 +488,30 @@ def leaderboards():
     db.text_factory = str
     c = db.cursor()
         
-    # Get tom ten scores within last 7 days
-    sql_query_week = """
-        SELECT game_id, nickname, score, game_class 
-        FROM games 
-        WHERE datetime(date, 'unixepoch')  > datetime('now', '-7 days') 
-        AND nickname > '' 
-        AND score > 0
-        ORDER BY score
-        LIMIT 10;
-    """   
-    try:
-        c.execute(sql_query_week)
-        rows_week = c.fetchall()
-    except sqlite3.Error as error:
-        app.logger.error(error)
-        return render_template('error.html', error = "Couldn't load leaderboards");
+    # Get top ten scores within last day
+    duration_day = 'start of day';
+    leaderboard_day = get_leaderboard(duration_day, c)
 
-    i = 1
-    leaderboard_week = {}
-    for row in rows_week:
-        entry = {}
-        entry['game_id']    = row[0]
-        entry['nickname']   = row[1]
-        entry['score']      = row[2]
-        entry['game_class'] = row[3]
-        leaderboard_week[i] = entry
-        i += 1
+    # Get top ten scores within last 7 days
+    duration_week = '-7 days';
+    leaderboard_week = get_leaderboard(duration_week, c)
             
     # Get top ten scores within last 30 days
-    sql_query_month = """
-        SELECT game_id, nickname, score, game_class 
-        FROM games 
-        WHERE datetime(date, 'unixepoch')  > datetime('now', '-30 days')   
-        AND nickname > '' 
-        AND score > 0
-        ORDER BY score
-        LIMIT 10;
-    """    
-    try:
-        c.execute(sql_query_month)
-        rows_month = c.fetchall()
-    except sqlite3.Error as error:
-        app.logger.error(error)
-        return render_template('error.html', error = "Couldn't load leaderboards");
-
-    i = 1
-    leaderboard_month = {}
-    for row in rows_month:
-        entry = {}
-        entry['game_id']     = row[0]
-        entry['nickname']    = row[1]
-        entry['score']       = row[2]
-        entry['game_class']  = row[3]
-        leaderboard_month[i] = entry
-        i += 1
+    duration_month = '-30 days';
+    leaderboard_month = get_leaderboard(duration_month, c)
             
     # Get top ten scores from all time
-    sql_query_alltime = """
-        SELECT game_id, nickname, score, game_class 
-        FROM games 
-        WHERE nickname > '' 
-        AND score > 0
-        ORDER BY score
-        LIMIT 10;
-    """
-    try:
-        c.execute(sql_query_alltime)
-        rows_alltime = c.fetchall()
-    except sqlite3.Error as error:
-        app.logger.error(error)
-        return render_template('error.html', error = "Couldn't load leaderboards");
-
-    i = 1
-    leaderboard_alltime = {}
-    for row in rows_alltime:
-        entry = {}
-        entry['game_id']       = row[0]
-        entry['nickname']      = row[1]
-        entry['score']         = row[2]
-        entry['game_class']    = row[3]
-        leaderboard_alltime[i] = entry
-        i += 1
+    duration_alltime = '-100 years';
+    leaderboard_alltime = get_leaderboard(duration_alltime, c)
+    
+    # Close the database connection
+    db.close()
     
     # Pass the scores to the template
     return render_template('leaderboards.html', 
+        leaderboard_day    = json.dumps(leaderboard_day), 
         leaderboard_week    = json.dumps(leaderboard_week), 
-        leaderboard_month   = json.dumps(leaderboard_month), 
-        leaderboard_alltime = json.dumps(leaderboard_alltime))
+        leaderboard_month   = json.dumps(leaderboard_month))
 
 
 @app.route("/classrank/<class_lookup>")
