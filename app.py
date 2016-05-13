@@ -141,6 +141,50 @@ def get_leaderboard (duration, c):
         
     return leaderboard
     
+def init_database(db):
+    # create the games database if it does not exist
+    query = """
+    CREATE TABLE IF NOT EXISTS 
+        games(
+            'game_id' CHAR(50) PRIMARY KEY, 
+            'class', 
+            'draft_json', 
+            'picks_json', 
+            'time_used', 
+            'score', 
+            'nickname', 
+            'difficulty'
+        )
+    """
+    db.execute(query)
+    db.commit()
+    
+    #Make sure all the colums are in place
+    columns = ['game_id', 'class', 'draft_json', 'picks_json', 'time_used', 'score', 'nickname', 'difficulty']
+    c = db.cursor()
+    query  = "PRAGMA table_info(games)"
+    c.execute(query)
+    rows = c.fetchall()
+    query = "ALTER TABLE games ADD COLUMN ?;"
+    db_columns = []
+    for row in rows:
+        db_columns.append(row[1])
+        
+    for column in columns:
+        if column not in db_columns:
+            c.execute("ALTER TABLE games ADD COLUMN " + column + ";")
+    
+    # Set default values
+    query = "UPDATE games SET score = 0 WHERE score IS NULL;"
+    c.execute(query)
+    query = "UPDATE games SET time_used = 0 WHERE time_used IS NULL;"
+    c.execute(query)
+    query = "UPDATE games SET nickname = '' WHERE nickname IS NULL;"
+    c.execute(query)
+    query = "UPDATE games SET difficulty = 5 WHERE difficulty IS NULL;"
+    c.execute(query)
+    
+    db.commit()
     
 ################################################################################
 # Routes
@@ -163,10 +207,11 @@ def set():
         output += '<img src="' + card_image_url('cards/' + row[0])  + '"title="' + row[1]  + '">'
     return output
 
-@app.route("/draft")
+@app.route("/draft", methods=['POST', 'GET'])
 def draft():
     # Establish db connection
     db = sqlite3.connect('game.sqlite')
+    init_database(db)
     c = db.cursor()
 
     # Buffer page output
@@ -247,7 +292,6 @@ def draft():
 
     # Pass data to the template
     return render_template("draft.html", 
-        head_title ='Draft Game', 
         hero_class = random_class.title(), 
         hero = get_url(random_class),
         game_id = game_id, 
