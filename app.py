@@ -207,20 +207,21 @@ def set():
         output += '<img src="' + card_image_url('cards/' + row[0])  + '"title="' + row[1]  + '">'
     return output
 
-@app.route("/draft", methods=['POST', 'GET'])
-def draft():
+@app.route("/draft/<int:difficulty>", methods=['POST', 'GET'])
+# Set default difficulty to 5 seconds
+def draft(difficulty = 5):
     # Establish db connection
-    db = sqlite3.connect('game.sqlite')
+    db           = sqlite3.connect('game.sqlite')
     init_database(db)
-    c = db.cursor()
 
     # Buffer page output
     random_class = choice(classes)
-    packs = []
-    db_packs = {}
+    packs        = []
+    db_packs     = {}
 
     # Define base query
-    sql  = """
+    c            = db.cursor()
+    sql          = """
         SELECT 
             cards.card_game_id,
             cards.card_name_en,
@@ -238,15 +239,19 @@ def draft():
             RANDOM()
         LIMIT 3
     """
-    
+
     # Draft 30 sets of 3 cards
     for i in range(1,31):
-        pick_rarity = select_rarity(i in [1,10,20,30])
-        pick_rarity_2 = pick_rarity
-        if pick_rarity == "COMMON": pick_rarity_2 = "FREE"
+        pick_rarity     = select_rarity(i in [1,10,20,30])
+        pick_rarity_2   = pick_rarity
+        
+        if pick_rarity == "COMMON": 
+            pick_rarity_2 = "FREE"
+        
         cards = {}
         db_cards = {}
         j = 1;
+        
         try:
             c.execute(sql, (random_class, pick_rarity, pick_rarity_2))
             rows = c.fetchall()
@@ -265,6 +270,7 @@ def draft():
             db_cards[j]         = row[0] # card-id
             cards[j]            = card
             j += 1
+        
         packs.append(cards)
         
         # Make a seperate list of cards with just the card ids to store in the games table
@@ -278,11 +284,12 @@ def draft():
     
     # Insert game_id and drafte into games table
     sql_insert = """
-        INSERT INTO games (game_id, game_class, draft_json, date, nickname) 
-        VALUES (?, ?, ?, ?, '');
+        INSERT INTO games (game_id, game_class, draft_json, date, nickname, difficulty) 
+        VALUES (?, ?, ?, ?, ?, ?);
     """
+
     try:
-        db.execute(sql_insert, (game_id, random_class, draft_json, math.floor(time.time())))
+        db.execute(sql_insert, (game_id, random_class, draft_json, math.floor(time.time()), '', difficulty))
     except sqlite3.Error as error:
         app.logger.error(error)
         return render_template('error.html', error = "Something went wrong while creating game");   
@@ -295,7 +302,8 @@ def draft():
         hero_class = random_class.title(), 
         hero = get_url(random_class),
         game_id = game_id, 
-        draft=packs)
+        draft=packs,
+        difficulty=difficulty)
 
 @app.route("/draftdone", methods=['POST'])
 def draftdone():
@@ -321,7 +329,7 @@ def draftdone():
 
     # Get the draft JSON
     sql_draft = """
-        SELECT draft_json, game_class 
+        SELECT draft_json, game_class, difficulty 
         FROM games 
         WHERE game_id = ?;        
     """
@@ -335,6 +343,10 @@ def draftdone():
     # cast the keys in the draft to int, then sort the dictionary
     draft_unsorted  = {int(k):v for k,v in json.loads(row[0]).items()}
     draft           = collections.OrderedDict(sorted(draft_unsorted.items()))
+    
+    # Buffer the class and difficulty
+    draft_class     = row[1]
+    difficulty      = row[2]
     
     # Update pick counter in the scores table
     sql_update_pick_counter = """
@@ -368,7 +380,7 @@ def draftdone():
             card_score_list.append(int(card_scores[card]))
             
             # Update scores table offer counter
-            c.execute(sql_update_offer_counter, (card, data['draft_class'].lower()))
+            c.execute(sql_update_offer_counter, (card, draft_class))
 
         # ...then get the highest and lowest score in the list
         best_card_score  = max(card_score_list)
@@ -383,11 +395,11 @@ def draftdone():
             pick_score  +=  int(card_scores[card_picked])
 
             # Update scores table pick counter
-            c.execute(sql_update_pick_counter, (card_picked, data['draft_class'].lower()))
+            c.execute(sql_update_pick_counter, (card_picked, draft_class))
             
         # If user neglected to pick a card, the penalty is severe
         else:
-            missed_pick_score  += (( best_card_score - worst_card_score ) * 2)
+            missed_pick_score  += (( best_card_score - worst_card_score ) * difficulty)
 
     # Commit the updates to scores table
     try: 
@@ -400,7 +412,7 @@ def draftdone():
     draft_score =  (max_score - pick_score) + missed_pick_score
 
     # The users total score is the draft score + time used.
-    seconds     = round(float(data['time_used']) / 1000, 1)
+    seconds     = round(float(data['time_used']) / 1000, 2)
     user_score  = draft_score + seconds
 
     # Update the games table with the selected cards, time used, score and date
