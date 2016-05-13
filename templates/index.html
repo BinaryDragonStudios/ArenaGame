@@ -12,19 +12,47 @@
     text-align: center;
 }
 
-#welcome p {
-    padding: 10px 0;
+#info p {
+    padding: 5px 0;
     font-size: 1.2em;
 }
 
-button#start {
-    width: 300px;
+select#difficulty {
+    height: 30px;
+    cursor: pointer;
+    font-size: 0.9em;
+    padding-left: 3px;
+}
+
+.start {
+    margin-top: 0;
+}
+
+button.start {
+    width: 280px;
     margin-top: 10px;
 }
+
+.practice {
+    text-align: right;
+    font-size: 0.8em;
+    margin-right: -8%;
+}
+
 </style>
 {% endblock %}
 {% block script %}
-
+<script>
+$(document).ready(function () {
+    $("button#start").mouseup( function() {
+        difficulty = $("#difficulty").val();
+        window.location.replace('draft/'+difficulty);    
+    });
+    $("button#practice").mouseup( function() {
+        window.location.replace('draft/60');    
+    });
+});
+</script>
 {% endblock %}
 {% block content %}
 
@@ -36,13 +64,22 @@ button#start {
     </div>
     <h2 class="arena_text" id="header2">Disclaimer</h2>
     <div class="arena_text" id="info">
-        <span id="welcome">
-            <p>This game does not perfectly simulate a real draft<br />(But it's pretty close!)</p>
-            <p>Mana curve and synergies will not be taken into consideration when scoring your choices</p>
-            <p>Good luck, have fun!</p>
-            <a href="draft"><button class="arena_text" id="start">Go to Game</button></a>
-        </span>
-
+        <p>This game does not perfectly simulate a real draft<br />(But it's pretty close!)</p>
+        <p>Mana curve and synergies will not be taken into consideration when scoring your choices</p>
+        <p>Good luck, have fun!</p>
+        <p>Choose difficulty:
+            <select id="difficulty">
+                <option value="3">Very Hard (3 seconds)</option>
+                <option value="5">Hard (5 seconds)</option>
+                <option value="7" selected>Normal (7 seconds)</option>
+                <option value="10">Easy (10 seconds)</option>
+            </select>
+        </p>
+        <div class="start">
+            <button class="arena_text start" id="start">Start game</button>
+            <button class="arena_text start" id="practice">Practice*</button>
+        </div>
+        <div class="practice">*Will not earn you a place on the leaderboards</div>
     </div>
 </div>
 {% endblock %}

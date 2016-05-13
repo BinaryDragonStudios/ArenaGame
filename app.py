@@ -209,7 +209,7 @@ def set():
 
 @app.route("/draft/<int:difficulty>", methods=['POST', 'GET'])
 # Set default difficulty to 5 seconds
-def draft(difficulty = 5):
+def draft(difficulty):
     # Establish db connection
     db           = sqlite3.connect('game.sqlite')
     init_database(db)
@@ -313,10 +313,7 @@ def draftdone():
     # Establish db connection
     db = sqlite3.connect('game.sqlite')
     c = db.cursor()
-    
-    # Get the scores for the cards
-    card_scores     = get_card_scores(data['draft_class'].lower(), c)
-    
+   
     # Get the picks JSON and make keys integer
     picks = {int(k):v for k,v in json.loads(data['picks']).items()}
 
@@ -363,6 +360,9 @@ def draftdone():
         WHERE card_game_id = ? 
         AND draft_class = ?;
         """
+        
+    # Get the scores for the cards
+    card_scores     = get_card_scores(draft_class, c)
 
     # Compute user score
     max_score         = 0
@@ -399,7 +399,7 @@ def draftdone():
             
         # If user neglected to pick a card, the penalty is severe
         else:
-            missed_pick_score  += (( best_card_score - worst_card_score ) * difficulty)
+            missed_pick_score  += (( best_card_score - worst_card_score ) * 2 * difficulty)
 
     # Commit the updates to scores table
     try: 
@@ -409,36 +409,39 @@ def draftdone():
         return render_template('error.html', error = "Something went wrong while updating some statistics")
 
     # Draft score is set to best possible score minus what the user drafted
-    draft_score =  (max_score - pick_score) + missed_pick_score
+    draft_score =  (max_score - pick_score)*difficulty + missed_pick_score
 
     # The users total score is the draft score + time used.
     seconds     = round(float(data['time_used']) / 1000, 2)
     user_score  = draft_score + seconds
 
-    # Update the games table with the selected cards, time used, score and date
-    sql_update = """
-        UPDATE games 
-        SET picks_json = ?, time_used = ?, score = ? 
-        WHERE game_id = ?;
-    """
-    try:
-        c.execute(sql_update, (json.dumps(picks_dict), seconds, user_score, data['game_id']))
-        db.commit()
-    except sqlite3.Error as error:
-        app.logger.error(error)
-        return render_template('error.html', error = "Something went wrong while saving game")
+    # If difficulty is less than 61 seconds, update the games table with the selected cards, time used, score and date
+    if difficulty < 61:
+        sql_update = """
+            UPDATE games 
+            SET picks_json = ?, time_used = ?, score = ? 
+            WHERE game_id = ?;
+        """
+        try:
+            c.execute(sql_update, (json.dumps(picks_dict), seconds, user_score, data['game_id']))
+            db.commit()
+        except sqlite3.Error as error:
+            app.logger.error(error)
+            return render_template('error.html', error = "Something went wrong while saving game")
     
-    # Check if user earned a spot on the leaderboards
     made_leaderboards   = "False"
-    duration            = 'start of day';
-    leaderboards_day    = get_leaderboard(duration, c)
 
-    #If there are less the 10 entries in the leaderboeard from today, the user made it
-    if len(leaderboards_day) < 10:
-        made_leaderboards = "True"
-    # Or, if user's score is less than the highest score, the user made it
-    elif user_score < leaderboards_day[10]['score']:
-        made_leaderboards = "True"
+    # if difficulty is 15 or less check if user earned a spot on the leaderboards
+    if difficulty < 16:
+        duration            = 'start of day';
+        leaderboards_day    = get_leaderboard(duration, c)
+
+        #If there are less the 10 entries in the leaderboeard from today, the user made it
+        if len(leaderboards_day) < 10:
+            made_leaderboards = "True"
+        # Or, if user's score is less than the highest score, the user made it
+        elif user_score < leaderboards_day[10]['score']:
+            made_leaderboards = "True"
 
     db.close()
     
@@ -486,7 +489,7 @@ def result(game_id):
     
     # Database query to get game data
     game_sql = """
-        SELECT draft_json, picks_json, game_class, score, time_used, nickname
+        SELECT draft_json, picks_json, game_class, score, time_used, nickname, difficulty
         FROM games 
         WHERE game_id = ?;
     """
@@ -520,6 +523,7 @@ def result(game_id):
         game['nickname']= row[5].decode('utf-8')
     else:
         game['nickname']= ''
+    game['difficulty']  = row[6]
     game['picks']       = json.dumps(picks)
     game['draft']       = collections.OrderedDict(sorted(draft.items()))
     game['card_scores'] = get_card_scores(game['hero_class'], c)

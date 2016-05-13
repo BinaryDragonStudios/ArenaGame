@@ -80,6 +80,7 @@ button#start {
         draft = JSON.parse({{ game['draft_json'] | tojson | safe }});
         picks = JSON.parse({{ game['picks'] | tojson | safe }});
         scores = JSON.parse({{ game['scores_json'] | tojson | safe }});
+        difficulty = {{ game['difficulty'] }}
         $.each(picks, function(i, val) {
             max_score = Math.max(scores[draft[i.toString()]['1']], scores[draft[i.toString()]['2']], scores[draft[i.toString()]['3']])
             min_score = Math.min(scores[draft[i.toString()]['1']], scores[draft[i.toString()]['2']], scores[draft[i.toString()]['3']])
@@ -89,17 +90,17 @@ button#start {
             green = "#1b9711";
             if(val > '') {
                 pick_score = scores[val];
-                score = max_score - pick_score;
+                score = (max_score - pick_score) * difficulty;
                 draft_score += score;
                 color='';
                 $("tr#pick_"+i+" ."+val).css("color", red);
                 if (score > 0) {
                     color = yellow;
                 }
-                if (score > 15) {
+                if (score > 50) {
                     color = orange;
                 } 
-                if (score > 30) {
+                if (score > 100) {
                     color = red;
                 } 
                 $("tr#pick_"+i+" .result").html("Penalty<br />+ " + score).css("color", color);   
@@ -109,8 +110,8 @@ button#start {
                     $("tr#pick_"+i+" ."+val).css("color", green);
                 }
             } else {
-                penalty = 2*(max_score - min_score);
-                if(penalty > 30) {
+                penalty = difficulty*2*(max_score - min_score);
+                if(penalty > 100) {
                     $("tr#pick_"+i+" .result").html("No pick! <br />+" + penalty).css("color", red);
                 } else {
                     $("tr#pick_"+i+" .result").html("No pick! <br />+" + penalty).css("color", orange); 
@@ -144,6 +145,9 @@ button#start {
                 <table id="score_table">
                     <tr>
                         <td>Class:</td><td>{{ game['hero_class'] | title }}</td>
+                    </tr>
+                    <tr>
+                        <td>Difficulty:</td><td>{{ game['difficulty'] }} seconds</td>
                     </tr>
                     <tr>
                         <td>Draft score:</td><td id="draft_score"></td>

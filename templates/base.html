@@ -157,7 +157,7 @@ a {
 }
 
 #gem {
-    background-image: url(static/gem.png);
+    background-image: url({{ url_for('static', filename='gem.png') }});
     background-repeat: no-repeat;
     background-size: contain;
     display: inline-block;
@@ -180,7 +180,7 @@ a {
     margin-top: 40px;
 }
 
-button#start {
+button.start {
     margin-top: 30px;
     font-size: 2em;
     text-align: center;
@@ -213,7 +213,7 @@ function escapeHtml(string) {
 <div id="page_top">
     <div id="arena" class="arena_text"><a href="{{ url_for('index') }}">Arena Drafting Game</a><span class="beta"> beta</span></div>
     <div id="menu" class="arena_text">
-        <a href="{{ url_for('draft') }}">New Game</a> | 
+        <a href="{{ url_for('draft', difficulty=5) }}">New Game</a> | 
         <a href="{{ url_for('leaderboards') }}">Leaderboards</a> |  <a href="{{ url_for('shoutouts') }}">Shoutouts</a>
     </div>
 </div>

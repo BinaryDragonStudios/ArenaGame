@@ -42,11 +42,13 @@ img {
 }
 
 #gem span.arena_text {
+    display: inline-block;
     font-size: 3em;
-    position: absolute;
-    top: 14px;
-    left: 27px;
+    width: 85px;
+    height: 100px;
     color: #fff6a9;
+    text-align: center;
+    padding-top: 13px;
 }
 
 table#pack_table {
@@ -77,7 +79,7 @@ table#pack_table {
     padding-left: 10px;
 }
 
-button#start {
+button.start {
     width: 200px;
 }
 
@@ -130,7 +132,7 @@ li:before {
     display: inline-block;
     height: 20px;
     width: 20px;
-    background-image: url(static/gem_blue.png);
+    background-image: url({{ url_for('static', filename='gem_blue.png') }});
     background-size: contain; 
     background-repeat: no-repeat;
     margin-left: 2px;
@@ -195,7 +197,6 @@ span.card_name.legendary { color: #ffb024; }
 <script>
 
 $(document).ready(function () {
-    var timeout = 5000;
     var card_on_press = function(pick, pick_array){
          $("body").css("background-color", "#fff");
         start_countdown_timer(0,pick_array);
@@ -260,15 +261,14 @@ $(document).ready(function () {
             $.post(
                 "/draftdone",
                 {
-                    draft_class:    hero_class, 
                     game_id:        game_id, 
                     time_used:      time_used, 
                     draft:          JSON.stringify({{ draft | tojson }}), 
-                    picks:          JSON.stringify(return_picks) 
+                    picks:          JSON.stringify(return_picks)
                 }
             )
             .done(function( made_leaderboards ) {
-                result_page = "result/" + game_id;
+                result_page = "../result/" + game_id;
                 if(made_leaderboards == "True") {
                     clearInterval(counter);
                     clearTimeout(timeout_id);
@@ -325,10 +325,19 @@ $(document).ready(function () {
     var start_time = 0;
     var timeout_id;
     var counter;
+    var difficulty = parseInt({{ difficulty }})
+    
+    if(difficulty == 0) {
+        window.location.replace('1');
+    }
+    
+    if(difficulty > 60) {
+        window.location.replace('60');
+    }
     
     function countdown() {
         clearInterval(counter);
-        seconds = 5;
+        seconds = difficulty;
         $("#gem span.arena_text").html(seconds);
         counter = setInterval(function() {
             seconds--;
@@ -341,13 +350,13 @@ $(document).ready(function () {
         countdown();
         timeout_id = setTimeout(function() {
              card_on_press(pick, pick_array);
-        }, 5000);
+        }, difficulty*1000);
     }
 
     $("tr").hide(0);
     $("tr:first").show(100);
     $("#draft_container").show(500);
-    $("button#start").mouseup( function() {
+    $("button.start").mouseup( function() {
         $("#info").hide();
         $("#hero, #gem").css('visibility', 'visible');
         $("#header1").html("Now drafting {{ hero_class }}")
@@ -382,12 +391,12 @@ $(document).ready(function () {
                 <li><span class="rule">The game consists of 30 turns</span></li>
                 <li><span class="rule">Each turn, you get 3 cards to choose from</span></li>
                 <li><span class="rule">Your goal is to pick the card with the highest value</span></li>
-                <li><span class="rule">You have 5 seconds to make your decision</span></li>
+                <li><span class="rule">You have {{ difficulty }} seconds to make your decision</span></li>
                 <li><span class="rule">Your total score is decided by your decisions and total time used</span></li>
             </ul>
             <div class="start">
                 Ready? Click start to begin!<br />
-                <button class="arena_text" id="start">Start</button>
+                <button class="arena_text start">Start</button>
             </div>
 
         </div>
@@ -402,7 +411,7 @@ $(document).ready(function () {
                     data-cost="{{ pack[1]['card-cost'] }}" 
                     data-class="{{ pack[1]['card-class'] }}" 
                     data-rarity="{{ pack[1]['card-rarity'] }}" 
-                    src="static/cards/{{ pack[1]['card-id'] }}.png">
+                    src="{{ url_for('static', filename='cards/') }}{{ pack[1]['card-id'] }}.png">
                 <td><img 
                     class="pack_pick first" 
                     data-pick-number={{ loop.index }} 
@@ -411,7 +420,7 @@ $(document).ready(function () {
                     data-cost="{{ pack[2]['card-cost'] }}" 
                     data-class="{{ pack[2]['card-class'] }}" 
                     data-rarity="{{ pack[2]['card-rarity'] }}" 
-                    src="static/cards/{{ pack[2]['card-id'] }}.png">
+                    src="{{ url_for('static', filename='cards/') }}{{ pack[2]['card-id'] }}.png">
                 <td><img 
                     class="pack_pick first" 
                     data-pick-number={{ loop.index }} 
@@ -420,7 +429,7 @@ $(document).ready(function () {
                     data-cost="{{ pack[3]['card-cost'] }}" 
                     data-class="{{ pack[3]['card-class'] }}" 
                     data-rarity="{{ pack[3]['card-rarity'] }}" 
-                    src="static/cards/{{ pack[3]['card-id'] }}.png">
+                    src="{{ url_for('static', filename='cards/') }}{{ pack[3]['card-id'] }}.png">
             </tr>
         {% endfor %}
         </table>
