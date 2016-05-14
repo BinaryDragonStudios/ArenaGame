@@ -371,8 +371,10 @@ def draftdone():
     pick_score        = 0
     missed_pick_score = 0
     total_penalty     = 0
-    diff_penalty      = difficulty * 3
-    
+    diff_penalty      = 2 * difficulty
+    if difficulty > 15:
+        diff_penalty = 0
+
     for turn in draft:
         card_score_list = []
         card_picked = picks_dict[turn]
@@ -399,12 +401,12 @@ def draftdone():
             # If the score is > 0, add difficulty penalty
             if pick_penalty > 0:
                 pick_penalty += diff_penalty
-                
+
             total_penalty += pick_penalty
-            
+
             # Update scores table pick counter
             c.execute(sql_update_pick_counter, (card_picked, draft_class))
-            
+
         # If user neglected to pick a card, the penalty is severe
         else:
             missed_pick_score  += (( best_card_score - worst_card_score + diff_penalty) * 2)

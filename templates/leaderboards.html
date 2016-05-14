@@ -133,12 +133,16 @@ span.score {
 {% block script %}
 <script>
     $(document).ready(function () {
-        difficulty          = {{ difficulty }};
-        leaderboard_day     = JSON.parse({{ leaderboard_day | tojson | safe }});
-        leaderboard_week    = JSON.parse({{ leaderboard_week | tojson | safe }});
-        leaderboard_month   = JSON.parse({{ leaderboard_month | tojson | safe }});
-        var today = new Date();
-        cols = ['day', 'week', 'month'];
+        var difficulty          = {{ difficulty }};
+        if (difficulty > 15) {
+            window.location.replace( "{{ url_for('leaderboards', difficulty=15) }}" );
+        }
+        
+        var leaderboard_day     = JSON.parse({{ leaderboard_day | tojson | safe }});
+        var leaderboard_week    = JSON.parse({{ leaderboard_week | tojson | safe }});
+        var leaderboard_month   = JSON.parse({{ leaderboard_month | tojson | safe }});
+        var today               = new Date();
+        var cols                = ['day', 'week', 'month'];
         
         for (i = 0; i < 3; i++) {
             $("#score_table tr.boards").append("<td id='"+cols[i]+"'><ul class='leaderboard'></ul></td>");

@@ -86,7 +86,7 @@ button.start {
         var draft           = JSON.parse({{ game['draft_json'] | tojson | safe }});
         var picks           = JSON.parse({{ game['picks'] | tojson | safe }});
         var scores          = JSON.parse({{ game['scores_json'] | tojson | safe }});
-        var penalty_factor  = 3 * ({{ game['difficulty'] }})
+        var penalty_factor  = 2 * ({{ game['difficulty'] }})
         
         $.each(picks, function(i, val) {
             max_score = Math.max(scores[draft[i.toString()]['1']], scores[draft[i.toString()]['2']], scores[draft[i.toString()]['3']])
