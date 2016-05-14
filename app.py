@@ -200,12 +200,12 @@ def init_database(db):
 ################################################################################
 @app.route("/")
 def index():
-    return render_template('index.html')
+    return render_template('index.html', head_title = "Arena Drating Game - Welcome")
 
 
 @app.route("/tutorial")
 def tutorial():
-    return render_template('tutorial.html')
+    return render_template('tutorial.html', head_title = "Arena Drating Game - Tutorial")
 
 
 @app.route("/draft/<int:difficulty>")
@@ -303,7 +303,8 @@ def draft(difficulty):
         hero = get_url(random_class),
         game_id = game_id, 
         draft=packs,
-        difficulty=difficulty)
+        difficulty=difficulty,
+        head_title = "Arena Drating Game - " + str(difficulty) + " seconds")
 
 
 @app.route("/draftdone", methods=['POST'])
@@ -540,7 +541,8 @@ def result(game_id):
     return render_template('result.html', 
         error   = str(False), 
         game    = game,  
-        hero    = hero
+        hero    = hero, 
+        head_title = "Arena Drating Game - Result"
     )
 
 
@@ -575,12 +577,14 @@ def leaderboards(difficulty):
         leaderboard_day     = json.dumps(leaderboard_day), 
         leaderboard_week    = json.dumps(leaderboard_week), 
         leaderboard_month   = json.dumps(leaderboard_month),
-        difficulty          = difficulty)
+        difficulty          = difficulty, 
+        head_title = "Arena Drating Game - Leaderboards (" + str(difficulty) + " seconds)"
+    )
 
 
 @app.route("/shoutouts")
 def shoutouts():
-    return render_template('shoutouts.html')
+    return render_template('shoutouts.html', head_title = "Arena Drating Game - Shoutouts")
 
 
 @app.route("/classrank/<class_lookup>")
