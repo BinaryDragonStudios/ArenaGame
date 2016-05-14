@@ -370,11 +370,14 @@ def draftdone():
     max_score         = 0
     pick_score        = 0
     missed_pick_score = 0
-
+    total_penalty     = 0
+    diff_penalty      = difficulty * 3
+    
     for turn in draft:
         card_score_list = []
         card_picked = picks_dict[turn]
-
+        pick_penalty = 0;
+        
         # Make a list of the card scores
         for choice in draft[turn]:
             # make a list of the 3 scores from the pack oddered
@@ -390,18 +393,21 @@ def draftdone():
 
         # Test if user picked a card and add the value to the total scores
         if card_picked:
-            # Increase the max possible score
-            max_score   += best_card_score
+            # Calculate the penalty for picking that card
+            pick_penalty = best_card_score - int(card_scores[card_picked])
 
-            # Increase the pick score
-            pick_score  +=  int(card_scores[card_picked])
-
+            # If the score is > 0, add difficulty penalty
+            if pick_penalty > 0:
+                pick_penalty += diff_penalty
+                
+            total_penalty += pick_penalty
+            
             # Update scores table pick counter
             c.execute(sql_update_pick_counter, (card_picked, draft_class))
             
         # If user neglected to pick a card, the penalty is severe
         else:
-            missed_pick_score  += (( best_card_score - worst_card_score ) * 2 * difficulty)
+            missed_pick_score  += (( best_card_score - worst_card_score + diff_penalty) * 2)
 
     # Commit the updates to scores table
     try: 
@@ -411,7 +417,7 @@ def draftdone():
         return render_template('error.html', error = "Something went wrong while updating some statistics")
 
     # Draft score is set to best possible score minus what the user drafted
-    draft_score =  (max_score - pick_score)*difficulty + missed_pick_score
+    draft_score =  total_penalty + missed_pick_score
 
     # The users total score is the draft score + time used.
     seconds     = round(float(data['time_used']) / 1000, 2)

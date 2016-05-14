@@ -1,11 +1,6 @@
 {% extends "base.html" %}
 {% block style %}
 <style>
-
-#hero {
-    visibility: hidden;
-} 
-
 table#score_table {
     width: 850px;
     margin: auto;
@@ -114,7 +109,7 @@ span.nickname {
     padding-left: 5px;
 }
 
-span.score{
+span.score {
     width: 21%;
     margin-left: -1px;
     padding: 1px 10px 1px 5px;
@@ -196,7 +191,7 @@ span.score{
 
         $('.leaderboard li:not(.header)').on('click', function() {
             game_id = $(this).attr('id');
-            window.location.replace( "result/" + game_id );
+            window.location.replace( "{{ url_for('result', game_id=game_id) }}" + game_id);
         });
     })
 </script>

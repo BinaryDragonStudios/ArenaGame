@@ -1,6 +1,10 @@
 {% extends "base.html" %}
 {% block style %}
 <style>
+#hero {
+    visibility: visible;
+}
+
 #breakdown_container {
     display: none;
     padding-top: 30px;
@@ -65,8 +69,10 @@ td img {
     width: 250px;
 }
 
-button#start {
-    margin-top: 10px;
+button.start {
+    margin-top: 0;
+    font-size: 1.4em;
+    padding: 0 10px 5px 10px;
 }
 
     </style>
@@ -80,7 +86,7 @@ button#start {
         var draft           = JSON.parse({{ game['draft_json'] | tojson | safe }});
         var picks           = JSON.parse({{ game['picks'] | tojson | safe }});
         var scores          = JSON.parse({{ game['scores_json'] | tojson | safe }});
-        var difficulty      = {{ game['difficulty'] }}
+        var penalty_factor  = 3 * ({{ game['difficulty'] }})
         
         $.each(picks, function(i, val) {
             max_score = Math.max(scores[draft[i.toString()]['1']], scores[draft[i.toString()]['2']], scores[draft[i.toString()]['3']])
@@ -91,17 +97,20 @@ button#start {
             green = "#1b9711";
             if(val > '') {
                 pick_score = scores[val];
-                score = (max_score - pick_score) * difficulty;
+                score = max_score - pick_score;
+                if (score > 0) {
+                    score += penalty_factor;
+                }
                 draft_score += score;
                 color='';
                 $("tr#pick_"+i+" ."+val).css("color", red);
                 if (score > 0) {
                     color = yellow;
                 }
-                if (score > 50) {
+                if (score > 25) {
                     color = orange;
                 } 
-                if (score > 100) {
+                if (score > 50) {
                     color = red;
                 } 
                 $("tr#pick_"+i+" .result").html("Penalty<br />+ " + score).css("color", color);   
@@ -111,8 +120,8 @@ button#start {
                     $("tr#pick_"+i+" ."+val).css("color", green);
                 }
             } else {
-                penalty = difficulty*2*(max_score - min_score);
-                if(penalty > 100) {
+                penalty = 2*(max_score - min_score + penalty_factor);
+                if(penalty > 50) {
                     $("tr#pick_"+i+" .result").html("No pick! <br />+" + penalty).css("color", red);
                 } else {
                     $("tr#pick_"+i+" .result").html("No pick! <br />+" + penalty).css("color", orange); 
@@ -121,7 +130,7 @@ button#start {
             }
         });
         $("td#draft_score").html(draft_score + missed_score);
-        $("button#start").on("click", function() {
+        $("button.start").on("click", function() {
             $("#breakdown_container").toggle(200);
         });
 
@@ -161,7 +170,7 @@ button#start {
                     </tr>
                 </table>
                 <div class="start">
-                    <button class="arena_text" id="start">Review Draft</button>
+                    <button class="arena_text start">Review Draft</button>
                 </div>
             </div>
         </div>
