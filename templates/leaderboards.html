@@ -87,7 +87,7 @@ ul.leaderboard li:before {
     display: inline-block;
     height: 24px;
     width: 24px;
-    background-image: url(static/gem_common.png);
+    background-image: url({{ url_for('static', filename='gem_common.png') }});
     background-size: contain; 
     background-repeat: no-repeat;
     margin: 0 2px 1px 5px;
@@ -95,11 +95,11 @@ ul.leaderboard li:before {
 }
 
 #week ul.leaderboard li:before {
-    background-image: url(static/gem_rare.png);
+    background-image: url({{ url_for('static', filename='gem_rare.png') }});
 }
 
 #month ul.leaderboard li:before {
-    background-image: url(static/gem_epic.png);
+    background-image: url({{ url_for('static', filename='gem_epic.png') }});
 }
 
 span.score,
@@ -138,6 +138,7 @@ span.score{
 {% block script %}
 <script>
     $(document).ready(function () {
+        difficulty          = {{ difficulty }};
         leaderboard_day     = JSON.parse({{ leaderboard_day | tojson | safe }});
         leaderboard_week    = JSON.parse({{ leaderboard_week | tojson | safe }});
         leaderboard_month   = JSON.parse({{ leaderboard_month | tojson | safe }});
@@ -207,7 +208,7 @@ span.score{
             <div class="portrait"></div>
             <div class="frame"></div>
         </div>
-        <h2 class="arena_text" id="header2">Top scores</h2>
+        <h2 class="arena_text" id="header2">Difficulty: {{ difficulty }} seconds</h2>
         <div class="arena_text" id="info">
            <table id="score_table">
                 <tr class="header">

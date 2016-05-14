@@ -13,30 +13,22 @@
 }
 
 #info p {
-    padding: 5px 0;
+    padding: 15px 0;
     font-size: 1.2em;
 }
 
-select#difficulty {
-    height: 30px;
-    cursor: pointer;
-    font-size: 0.9em;
-    padding-left: 3px;
+#disclaimer {
+    padding-bottom: 20px;
 }
 
-.start {
-    margin-top: 0;
+#disclaimer p {
+    padding: 0;
+    margin: 10px;
+    font-size: 1.1em;
 }
 
-button.start {
-    width: 280px;
-    margin-top: 10px;
-}
-
-.practice {
-    text-align: right;
-    font-size: 0.8em;
-    margin-right: -8%;
+p.orange {
+    color: #f4923e;
 }
 
 </style>
@@ -44,12 +36,12 @@ button.start {
 {% block script %}
 <script>
 $(document).ready(function () {
-    $("button#start").mouseup( function() {
-        difficulty = $("#difficulty").val();
-        window.location.replace('draft/'+difficulty);    
+    var difficulty = 7;
+    $("button#start").click( function() {
+        window.location.replace("draft/"+ $("#difficulty").val());    
     });
-    $("button#practice").mouseup( function() {
-        window.location.replace('draft/60');    
+    $("button#practice").click( function() {
+        window.location.replace("{{ url_for('draft', difficulty=60) }}");    
     });
 });
 </script>
@@ -57,29 +49,20 @@ $(document).ready(function () {
 {% block content %}
 
 <div id="presentation_container">
-    <h2 class="arena_text" id="header1">WELCOME</h2>
+    <h2 class="arena_text" id="header1">Area Drafting Game</h2>
     <div id="hero">
         <div class="portrait"></div>
         <div class="frame"></div>
     </div>
-    <h2 class="arena_text" id="header2">Disclaimer</h2>
+    <h2 class="arena_text" id="header2">Welcome!</h2>
     <div class="arena_text" id="info">
-        <p>This game does not perfectly simulate a real draft<br />(But it's pretty close!)</p>
-        <p>Mana curve and synergies will not be taken into consideration when scoring your choices</p>
-        <p>Good luck, have fun!</p>
-        <p>Choose difficulty:
-            <select id="difficulty">
-                <option value="3">Very Hard (3 seconds)</option>
-                <option value="5">Hard (5 seconds)</option>
-                <option value="7" selected>Normal (7 seconds)</option>
-                <option value="10">Easy (10 seconds)</option>
-            </select>
-        </p>
-        <div class="start">
-            <button class="arena_text start" id="start">Start game</button>
-            <button class="arena_text start" id="practice">Practice*</button>
+        <div id="disclaimer">
+            <p>Disclaimer:</p>
+            <p>This game does not perfectly simulate a real draft<br />(But it's pretty close!)</p>
+            <p>Mana curve and synergies will not be taken into consideration when scoring your choices</p>
         </div>
-        <div class="practice">*Will not earn you a place on the leaderboards</div>
-    </div>
+        <p class="orange">Click "New Game" to start a new game</p>
+        <p>Good luck, have fun!</p>
+     </div>
 </div>
 {% endblock %}

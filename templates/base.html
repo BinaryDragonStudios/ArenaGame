@@ -72,10 +72,61 @@ body {
     text-align: right;
 }
 
+.dropdown_menu {
+    display: inline-block;
+    color: #f4923e;
+    cursor: pointer;
+}
+
+.dropdown_content {
+    display: none;
+    position: absolute;
+    background-color: #eecda2;
+    box-shadow: -7px 7px 5px 0px rgba(0,0,0,0.2);
+    border: 1px solid #6e4a32;
+    border-radius: 5px;
+    min-width: 150px;
+    text-align: left;
+}
+
+.dropdown_content a {
+    color: #f4923e;
+    text-decoration: none;
+    display: block;
+    padding: 0 7px;
+    padding-bottom: 3px;
+}
+
+.dropdown_content a:hover {
+    background-color: #f4923e;
+    color: #fff;
+}
+
+.dropdown_content a:first-child:hover {
+    border-top-left-radius: 5px;
+    border-top-right-radius: 5px;
+}
+
+.dropdown_content a:last-child:hover {
+    border-bottom-left-radius: 5px;
+    border-bottom-right-radius: 5px;
+}
+
+.dropdown_menu:hover .dropdown_label {
+    color: #fff;
+}
+
+.dropdown_menu:hover .dropdown_content {
+    display: block;
+}
 
 a {
     color: #f4923e;
-    text-decoration: none;   
+    text-decoration: none;
+}
+
+a:hover {
+    color: #fff;
 }
 
 #presentation_container {
@@ -213,8 +264,27 @@ function escapeHtml(string) {
 <div id="page_top">
     <div id="arena" class="arena_text"><a href="{{ url_for('index') }}">Arena Drafting Game</a><span class="beta"> beta</span></div>
     <div id="menu" class="arena_text">
-        <a href="{{ url_for('draft', difficulty=5) }}">New Game</a> | 
-        <a href="{{ url_for('leaderboards') }}">Leaderboards</a> |  <a href="{{ url_for('shoutouts') }}">Shoutouts</a>
+        <div class="dropdown_menu">
+            <div class="dropdown_label">New Game</div>
+            <div class="dropdown_content">
+                <a href="{{ url_for('draft',difficulty=3) }}">Very hard</a> 
+                <a href="{{ url_for('draft',difficulty=5) }}">Hard</a> 
+                <a href="{{ url_for('draft',difficulty=7) }}">Normal</a> 
+                <a href="{{ url_for('draft',difficulty=10) }}">Easy</a> 
+                <a href="{{ url_for('draft',difficulty=60) }}">Practice</a> 
+            </div>
+        </div>
+        | 
+        <div class="dropdown_menu">
+            <div class="dropdown_label">Leaderboards</div>
+            <div class="dropdown_content">
+                <a href="{{ url_for('leaderboards',difficulty=3) }}">Very Hard</a> 
+                <a href="{{ url_for('leaderboards',difficulty=5) }}">Hard</a> 
+                <a href="{{ url_for('leaderboards',difficulty=7) }}">Normal</a> 
+                <a href="{{ url_for('leaderboards',difficulty=10) }}">Easy</a> 
+            </div>
+        </div>
+        |  <a href="{{ url_for('shoutouts') }}">Shoutouts</a>
     </div>
 </div>
 <!-- begin content -->

@@ -1,6 +1,7 @@
 #!/usr/bin/env python2.7
 # -*- coding: utf-8 -*-
 
+
 ################################################################################
 # Imports
 ################################################################################
@@ -17,10 +18,12 @@ from flask import Flask, jsonify, json, render_template, request
 from jinja2 import Environment 
 from random import randint, choice
 
+
 ################################################################################
 # Objects
 ################################################################################
 app = Flask(__name__)
+
 
 ################################################################################
 # Global Variables
@@ -36,6 +39,7 @@ classes = [
     'warrior',
     'warlock'
 ]
+
 
 ################################################################################
 # Helper Functions
@@ -54,7 +58,7 @@ def get_url(hero):
     card_game_id = 'HERO_'
     x_offset = -115
     y_offset = -85
-    
+
     if hero == 'warrior':
         index = '01'
         x_offset -= 2
@@ -87,7 +91,7 @@ def get_url(hero):
     return {'url': card_image_url(card_game_id + index), 'x-offset': x_offset, 'y-offset': y_offset}
 
 def get_card_scores (draft_class, c):
-    
+
     # Define query
     scores_sql = """
         SELECT card_game_id, score, modifier 
@@ -102,7 +106,7 @@ def get_card_scores (draft_class, c):
     except sqlite3.Error as error:
         app.logger.error('An error occured: ' + error)
         return render_template('error.html', error = "Something went wrong while getting scores")   
-    
+
     # Buffer card scores
     card_scores = {}
     for row in scores:
@@ -110,23 +114,27 @@ def get_card_scores (draft_class, c):
         
     return card_scores
 
-def get_leaderboard (duration, c):
+def get_leaderboard (duration, difficulty, c):
     # Get tom ten scores within duration
-    sql_query_day = """
+    sql_query = """
         SELECT game_id, nickname, score, game_class 
         FROM games 
-        WHERE datetime(date, 'unixepoch')  > datetime('now','""" + duration + """') 
+        WHERE datetime(date, 'unixepoch')  > datetime('now',?) 
         AND nickname > '' 
-        AND score > 0
-        ORDER BY score
+        AND score > 0 
+        AND difficulty = ?
+        ORDER BY score 
         LIMIT 10;
-    """   
+    """
+
     try:
-        c.execute(sql_query_day)
+        c.execute(sql_query,  (duration, int(difficulty)))
         rows = c.fetchall()
     except sqlite3.Error as error:
         app.logger.error(error)
         return render_template('error.html', error = "Couldn't load leaderboard");
+
+    print rows
 
     i = 1
     leaderboard = {}
@@ -138,9 +146,9 @@ def get_leaderboard (duration, c):
         entry['game_class'] = row[3]
         leaderboard[i] = entry
         i += 1
-        
+
     return leaderboard
-    
+
 def init_database(db):
     # create the games database if it does not exist
     query = """
@@ -158,7 +166,7 @@ def init_database(db):
     """
     db.execute(query)
     db.commit()
-    
+
     #Make sure all the colums are in place
     columns = ['game_id', 'class', 'draft_json', 'picks_json', 'time_used', 'score', 'nickname', 'difficulty']
     c = db.cursor()
@@ -169,11 +177,11 @@ def init_database(db):
     db_columns = []
     for row in rows:
         db_columns.append(row[1])
-        
+
     for column in columns:
         if column not in db_columns:
             c.execute("ALTER TABLE games ADD COLUMN " + column + ";")
-    
+
     # Set default values
     query = "UPDATE games SET score = 0 WHERE score IS NULL;"
     c.execute(query)
@@ -183,9 +191,10 @@ def init_database(db):
     c.execute(query)
     query = "UPDATE games SET difficulty = 5 WHERE difficulty IS NULL;"
     c.execute(query)
-    
+
     db.commit()
-    
+
+
 ################################################################################
 # Routes
 ################################################################################
@@ -193,22 +202,13 @@ def init_database(db):
 def index():
     return render_template('index.html')
 
-@app.route("/set")
-def set():
-    db = sqlite3.connect('game.sqlite')
-    c = db.cursor()
-    sql = """
-        SELECT card_game_id, card_name_en  
-        FROM cards 
-        ORDER BY card_name_en
-    """
-    output = "<h1>Current Set</h1>"
-    for row in c.execute(sql):
-        output += '<img src="' + card_image_url('cards/' + row[0])  + '"title="' + row[1]  + '">'
-    return output
 
-@app.route("/draft/<int:difficulty>", methods=['POST', 'GET'])
-# Set default difficulty to 5 seconds
+@app.route("/tutorial")
+def tutorial():
+    return render_template('tutorial.html')
+
+
+@app.route("/draft/<int:difficulty>")
 def draft(difficulty):
     # Establish db connection
     db           = sqlite3.connect('game.sqlite')
@@ -244,21 +244,21 @@ def draft(difficulty):
     for i in range(1,31):
         pick_rarity     = select_rarity(i in [1,10,20,30])
         pick_rarity_2   = pick_rarity
-        
+
         if pick_rarity == "COMMON": 
             pick_rarity_2 = "FREE"
-        
+
         cards = {}
         db_cards = {}
         j = 1;
-        
+
         try:
             c.execute(sql, (random_class, pick_rarity, pick_rarity_2))
             rows = c.fetchall()
         except sqlite3.Error as error:
             app.logger.error(error)
             return render_template('error.html', error = "Something went wrong while creating game");   
- 
+
         for row in rows:
             card  = {}
             card['card-id']     = row[0]
@@ -270,18 +270,18 @@ def draft(difficulty):
             db_cards[j]         = row[0] # card-id
             cards[j]            = card
             j += 1
-        
+
         packs.append(cards)
-        
+
         # Make a seperate list of cards with just the card ids to store in the games table
         db_packs[i] = db_cards
-    
+
     # Make an unique game id
     game_id = str(uuid.uuid4())
-    
+
     # JSON string of draft to store in the games table
     draft_json = json.dumps(db_packs)
-    
+
     # Insert game_id and drafte into games table
     sql_insert = """
         INSERT INTO games (game_id, game_class, draft_json, date, nickname, difficulty) 
@@ -305,6 +305,7 @@ def draft(difficulty):
         draft=packs,
         difficulty=difficulty)
 
+
 @app.route("/draftdone", methods=['POST'])
 def draftdone():
     # Buffer data from POST
@@ -313,7 +314,7 @@ def draftdone():
     # Establish db connection
     db = sqlite3.connect('game.sqlite')
     c = db.cursor()
-   
+
     # Get the picks JSON and make keys integer
     picks = {int(k):v for k,v in json.loads(data['picks']).items()}
 
@@ -340,11 +341,11 @@ def draftdone():
     # cast the keys in the draft to int, then sort the dictionary
     draft_unsorted  = {int(k):v for k,v in json.loads(row[0]).items()}
     draft           = collections.OrderedDict(sorted(draft_unsorted.items()))
-    
+
     # Buffer the class and difficulty
     draft_class     = row[1]
     difficulty      = row[2]
-    
+
     # Update pick counter in the scores table
     sql_update_pick_counter = """
         UPDATE scores 
@@ -360,7 +361,7 @@ def draftdone():
         WHERE card_game_id = ? 
         AND draft_class = ?;
         """
-        
+
     # Get the scores for the cards
     card_scores     = get_card_scores(draft_class, c)
 
@@ -368,7 +369,7 @@ def draftdone():
     max_score         = 0
     pick_score        = 0
     missed_pick_score = 0
-    
+
     for turn in draft:
         card_score_list = []
         card_picked = picks_dict[turn]
@@ -428,13 +429,13 @@ def draftdone():
         except sqlite3.Error as error:
             app.logger.error(error)
             return render_template('error.html', error = "Something went wrong while saving game")
-    
+
     made_leaderboards   = "False"
 
     # if difficulty is 15 or less check if user earned a spot on the leaderboards
     if difficulty < 16:
         duration            = 'start of day';
-        leaderboards_day    = get_leaderboard(duration, c)
+        leaderboards_day    = get_leaderboard(duration, difficulty, c)
 
         #If there are less the 10 entries in the leaderboeard from today, the user made it
         if len(leaderboards_day) < 10:
@@ -444,17 +445,18 @@ def draftdone():
             made_leaderboards = "True"
 
     db.close()
-    
+
     # Return the game id to front-end
     return made_leaderboards
- 
+
+
 @app.route("/nickname", methods=['POST'])
 def nickname():
     # Buffer data from POST
     data = request.form
     game_id = data['game_id']
     nickname = data['nickname'].strip()
-    
+
     if len(nickname) > 20:
         response = "Nickname too long"
     elif len(nickname) < 4:
@@ -474,12 +476,12 @@ def nickname():
         except sqlite3.Error as error:
             app.logger.error(error)
             return render_template('error.html', error = "Something went wrong when saving nickname");   
-        
+
         db.close()
-        
+
     return response
-    
-    
+
+
 @app.route("/result/<game_id>", methods=['POST', 'GET'])
 def result(game_id):
     # Establish db connection
@@ -540,9 +542,10 @@ def result(game_id):
         game    = game,  
         hero    = hero
     )
-        
-@app.route("/leaderboards")
-def leaderboards():
+
+
+@app.route("/leaderboards/<difficulty>")
+def leaderboards(difficulty):
     # Establish db connection
     db = sqlite3.connect('game.sqlite')
     db.text_factory = str
@@ -550,28 +553,34 @@ def leaderboards():
         
     # Get top ten scores within last day
     duration_day = 'start of day';
-    leaderboard_day = get_leaderboard(duration_day, c)
+    leaderboard_day = get_leaderboard(duration_day, difficulty, c)
 
     # Get top ten scores within last 7 days
     duration_week = '-7 days';
-    leaderboard_week = get_leaderboard(duration_week, c)
+    leaderboard_week = get_leaderboard(duration_week, difficulty, c)
             
     # Get top ten scores within last 30 days
     duration_month = '-30 days';
-    leaderboard_month = get_leaderboard(duration_month, c)
+    leaderboard_month = get_leaderboard(duration_month, difficulty, c)
             
     # Get top ten scores from all time
     duration_alltime = '-100 years';
-    leaderboard_alltime = get_leaderboard(duration_alltime, c)
+    leaderboard_alltime = get_leaderboard(duration_alltime, difficulty, c)
     
     # Close the database connection
     db.close()
     
     # Pass the scores to the template
     return render_template('leaderboards.html', 
-        leaderboard_day    = json.dumps(leaderboard_day), 
+        leaderboard_day     = json.dumps(leaderboard_day), 
         leaderboard_week    = json.dumps(leaderboard_week), 
-        leaderboard_month   = json.dumps(leaderboard_month))
+        leaderboard_month   = json.dumps(leaderboard_month),
+        difficulty          = difficulty)
+
+
+@app.route("/shoutouts")
+def shoutouts():
+    return render_template('shoutouts.html')
 
 
 @app.route("/classrank/<class_lookup>")
@@ -614,16 +623,22 @@ ORDER BY
 
     return output + card_images
 
-# Dump JSON data
-@app.route('/data')
-def names():
-    data = {"names": ["John", "Jacob", "Julie", "Jennifer"]}
-    return jsonify(data)
 
-@app.route("/shoutouts")
-def shoutouts():
-    return render_template('shoutouts.html')
-    
+@app.route("/set")
+def set():
+    db = sqlite3.connect('game.sqlite')
+    c = db.cursor()
+    sql = """
+        SELECT card_game_id, card_name_en  
+        FROM cards 
+        ORDER BY card_name_en
+    """
+    output = "<h1>Current Set</h1>"
+    for row in c.execute(sql):
+        output += '<img src="' + card_image_url('cards/' + row[0])  + '"title="' + row[1]  + '">'
+    return output
+
+
 ################################################################################
 # Start if __main__
 ################################################################################

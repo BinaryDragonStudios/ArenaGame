@@ -259,7 +259,7 @@ $(document).ready(function () {
             var game_id = "{{ game_id }}";
             var hero_class = "{{ hero_class }}";
             $.post(
-                "/draftdone",
+                "{{ url_for('draftdone') }}",
                 {
                     game_id:        game_id, 
                     time_used:      time_used, 
@@ -268,7 +268,7 @@ $(document).ready(function () {
                 }
             )
             .done(function( made_leaderboards ) {
-                result_page = "../result/" + game_id;
+                result_page = "{{ url_for('result', game_id=game_id) }}";
                 if(made_leaderboards == "True") {
                     clearInterval(counter);
                     clearTimeout(timeout_id);
