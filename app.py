@@ -550,7 +550,8 @@ def result(game_id):
         error   = str(False), 
         game    = game,  
         hero    = hero, 
-        head_title = "Arena Drating Game - Result"
+        head_title = "Arena Drating Game - Result",
+        tweet   = "I scored a total of " + str(game['user_score']) + "! Can you beat me? http://arenagame.allikin.tv/"
     )
 
 

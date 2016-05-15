@@ -70,17 +70,30 @@ td img {
 }
 
 button.start {
-    margin-top: 0;
+    margin-top: -10px;
+    margin-bottom: 10px;
     font-size: 1.4em;
     padding: 0 10px 5px 10px;
 }
 
-    </style>
+</style>
 {% endblock %}
 
 {% block script %}
     <script>
     $(document).ready(function () {
+        !function(d,s,id){
+            var js, 
+                fjs = d.getElementsByTagName(s)[0],
+                p = /^http:/.test(d.location)?'http':'https';
+            if(!d.getElementById(id)){
+                js=d.createElement(s);
+                js.id=id;
+                js.src=p+'://platform.twitter.com/widgets.js';
+                fjs.parentNode.insertBefore(js,fjs);
+            }
+        }
+        (document, 'script', 'twitter-wjs');
         var draft_score     = 0;
         var missed_score    = 0;
         var draft           = JSON.parse({{ game['draft_json'] | tojson | safe }});
@@ -133,7 +146,6 @@ button.start {
         $("button.start").on("click", function() {
             $("#breakdown_container").toggle(200);
         });
-
     })
     </script>
 {% endblock %}
@@ -170,8 +182,9 @@ button.start {
                     </tr>
                 </table>
                 <div class="start">
-                    <button class="arena_text start">Review Draft</button>
-                </div>
+                    <button class="arena_text start">Review Draft</button><br />
+                    <a href="https://twitter.com/share" class="twitter-share-button" data-url="http://arenagame.allikin.tv/" data-text="Can you beet my score of {{ game['user_score'] }}?" data-size="large" data-hashtags="heartstone,arenadraftinggame">Tweet your game</a>
+              </div>
             </div>
         </div>
         <div id="list_container">
