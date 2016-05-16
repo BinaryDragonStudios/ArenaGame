@@ -81,11 +81,12 @@ ul.leaderboard li:before {
     content: attr(data-content) '';
     display: inline-block;
     height: 24px;
-    width: 24px;
+    width: 22px;
     background-image: url({{ url_for('static', filename='gem_common.png') }});
     background-size: contain; 
     background-repeat: no-repeat;
-    margin: 0 2px 1px 5px;
+    padding: 0 2px 1px 2px;
+    margin: 0 2px 1px 2px;
     vertical-align: middle;
 }
 
@@ -207,7 +208,11 @@ span.score {
             <div class="portrait"></div>
             <div class="frame"></div>
         </div>
-        <h2 class="arena_text" id="header2">Difficulty: {{ difficulty }} seconds</h2>
+        {% if difficulty != '0' %}
+            <h2 class="arena_text" id="header2">Difficulty: {{ difficulty }} seconds</h2>
+        {% else %}
+            <h2 class="arena_text" id="header2">Overall</h2>
+        {% endif %}
         <div class="arena_text" id="info">
            <table id="score_table">
                 <tr class="header">

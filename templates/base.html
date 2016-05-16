@@ -271,10 +271,10 @@ function escapeHtml(string) {
         <div class="dropdown_menu">
             <div class="dropdown_label">New Game</div>
             <div class="dropdown_content">
-                <a href="{{ url_for('draft',difficulty=3) }}">Very hard</a> 
-                <a href="{{ url_for('draft',difficulty=5) }}">Hard</a> 
-                <a href="{{ url_for('draft',difficulty=7) }}">Normal</a> 
                 <a href="{{ url_for('draft',difficulty=10) }}">Easy</a> 
+                <a href="{{ url_for('draft',difficulty=7) }}">Normal</a> 
+                <a href="{{ url_for('draft',difficulty=5) }}">Hard</a> 
+                <a href="{{ url_for('draft',difficulty=3) }}">Very hard</a> 
                 <a href="{{ url_for('draft',difficulty=60) }}">Practice</a> 
             </div>
         </div>
@@ -282,10 +282,12 @@ function escapeHtml(string) {
         <div class="dropdown_menu">
             <div class="dropdown_label">Leaderboards</div>
             <div class="dropdown_content">
-                <a href="{{ url_for('leaderboards',difficulty=3) }}">Very Hard</a> 
-                <a href="{{ url_for('leaderboards',difficulty=5) }}">Hard</a> 
-                <a href="{{ url_for('leaderboards',difficulty=7) }}">Normal</a> 
                 <a href="{{ url_for('leaderboards',difficulty=10) }}">Easy</a> 
+                <a href="{{ url_for('leaderboards',difficulty=7) }}">Normal</a> 
+                <a href="{{ url_for('leaderboards',difficulty=5) }}">Hard</a> 
+                <a href="{{ url_for('leaderboards',difficulty=3) }}">Very Hard</a> 
+                <a href="{{ url_for('leaderboards',difficulty=0) }}">Overall</a>
+                <a href="{{ url_for('halloffame',difficulty=0) }}">Hall of Fame</a>
             </div>
         </div>
         |  <a href="{{ url_for('shoutouts') }}">Shoutouts</a>

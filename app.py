@@ -114,37 +114,41 @@ def get_card_scores (draft_class, c):
         
     return card_scores
 
-def get_leaderboard (duration, difficulty, c):
+def get_leaderboard(c, difficulty = '0', duration = '-100 years'):
     # Get tom ten scores within duration
     sql_query = """
         SELECT game_id, nickname, score, game_class 
         FROM games 
         WHERE datetime(date, 'unixepoch')  > datetime('now',?) 
         AND nickname > '' 
-        AND score > 0 
-        AND difficulty = ?
+        AND score > 0 """
+    if difficulty != "0":
+        sql_query += "AND difficulty = ?"
+    sql_query += """
         ORDER BY score 
         LIMIT 10;
     """
 
     try:
-        c.execute(sql_query,  (duration, int(difficulty)))
+        if difficulty != "0":
+            c.execute(sql_query,  (duration, int(difficulty)))
+        else:
+            c.execute(sql_query,  (duration,))
         rows = c.fetchall()
+
     except sqlite3.Error as error:
         app.logger.error(error)
         return render_template('error.html', error = "Couldn't load leaderboard");
 
-    print rows
-
     i = 1
     leaderboard = {}
     for row in rows:
-        entry = {}
+        entry               = {}
         entry['game_id']    = row[0]
         entry['nickname']   = row[1]
         entry['score']      = row[2]
         entry['game_class'] = row[3]
-        leaderboard[i] = entry
+        leaderboard[i]      = entry
         i += 1
 
     return leaderboard
@@ -444,7 +448,7 @@ def draftdone():
     # if difficulty is 15 or less check if user earned a spot on the leaderboards
     if difficulty < 16:
         duration            = 'start of day';
-        leaderboards_day    = get_leaderboard(duration, difficulty, c)
+        leaderboards_day    = get_leaderboard(c, difficulty, duration)
 
         #If there are less the 10 entries in the leaderboeard from today, the user made it
         if len(leaderboards_day) < 10:
@@ -561,23 +565,19 @@ def leaderboards(difficulty):
     db = sqlite3.connect('game.sqlite')
     db.text_factory = str
     c = db.cursor()
-        
+
     # Get top ten scores within last day
     duration_day = 'start of day';
-    leaderboard_day = get_leaderboard(duration_day, difficulty, c)
+    leaderboard_day = get_leaderboard(c, difficulty, duration_day)
 
     # Get top ten scores within last 7 days
     duration_week = '-7 days';
-    leaderboard_week = get_leaderboard(duration_week, difficulty, c)
+    leaderboard_week = get_leaderboard(c, difficulty, duration_week)
             
     # Get top ten scores within last 30 days
     duration_month = '-30 days';
-    leaderboard_month = get_leaderboard(duration_month, difficulty, c)
+    leaderboard_month = get_leaderboard(c, difficulty, duration_month)
             
-    # Get top ten scores from all time
-    duration_alltime = '-100 years';
-    leaderboard_alltime = get_leaderboard(duration_alltime, difficulty, c)
-    
     # Close the database connection
     db.close()
     
@@ -588,6 +588,27 @@ def leaderboards(difficulty):
         leaderboard_month   = json.dumps(leaderboard_month),
         difficulty          = difficulty, 
         head_title = "Arena Drating Game - Leaderboards (" + str(difficulty) + " seconds)"
+    )
+
+
+@app.route("/halloffame/<difficulty>")
+def halloffame(difficulty):
+    # Establish db connection
+    db = sqlite3.connect('game.sqlite')
+    db.text_factory = str
+    c = db.cursor()
+
+    # Get top ten scores all time on easy
+    halloffame = get_leaderboard(c)
+
+    # Close the database connection
+    db.close()
+
+    # Pass the scores to the template
+    return render_template('halloffame.html', 
+        halloffame = json.dumps(halloffame), 
+        difficulty = difficulty, 
+        head_title = "Arena Drating Game - Hall of fame (Difficulty: " + str(difficulty) + " seconds)"
     )
 
 
