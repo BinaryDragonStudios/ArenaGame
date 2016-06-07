@@ -1,0 +1,201 @@
+{% extends "base.html" %}
+{% block style %}
+<style>
+table#score_table {
+    width: 850px;
+    margin: auto;
+}
+
+.arena_text#info {
+    margin-top: 75px;
+}
+
+table#score_table th {
+    padding-bottom: 10px;
+}
+
+table#score_table td {
+    padding-top: 10px;
+}
+
+ul.leaderboard {
+    list-style-position: inside;
+    list-style: none;
+    font-size: 0.8em;
+    padding: 0;
+    width: 270px;
+    margin: auto;
+ }
+
+ul.leaderboard li {
+    background-color: #fddfb9;
+    color: #fff;
+    font-weight: normal;
+    border: 1px solid #222;
+    border-radius: 3px;
+    padding-top: 2px;
+    cursor: pointer;
+    filter: grayscale(90%);
+}
+
+ul.leaderboard li:hover {
+    border-color: #0f0;
+}
+
+ul.leaderboard li.header {
+    width: 100%;
+    font-size: 1.1em;
+    border-color: #222;
+    cursor: default;
+}
+
+#day ul.leaderboard li.header {
+    background-color: #eee;
+}
+
+#week ul.leaderboard li.header {
+    background-color: #7ecbfe;
+}
+
+#month ul.leaderboard li.header {
+    background-color: #fe64fc;
+}
+
+ul.leaderboard li.header:before {
+    visibility: hidden;
+}
+
+.warrior .score {background-color: #702116;}
+.shaman  .score {background-color: #292f55;}
+.rogue   .score {background-color: #3d3e42;}
+.paladin .score {background-color: #ebaa1b;}
+.hunter  .score {background-color: #246521;}
+.druid   .score {background-color: #6e411f;}
+.warlock .score {background-color: #503458;}
+.mage    .score {background-color: #596896;}
+.priest  .score {background-color: #b8bec1;}
+
+ul.leaderboard li:before {
+    content: attr(data-content) '';
+    display: inline-block;
+    height: 26px;
+    width: 20px;
+    background-image: url({{ url_for('static', filename='gem_legendary.png') }});
+    background-size: contain; 
+    background-repeat: no-repeat;
+    padding: 0 2px 1px 2px;
+    margin: 0 2px 1px 2px;
+    vertical-align: middle;
+}
+
+#week ul.leaderboard li:before {
+    background-image: url({{ url_for('static', filename='gem_rare.png') }});
+}
+
+#month ul.leaderboard li:before {
+    background-image: url({{ url_for('static', filename='gem_epic.png') }});
+}
+
+span.score,
+span.nickname {
+    display: inline-block;
+    font-size: 0.9em;
+}
+
+span.nickname {
+    height: 100%;
+    width: 60%;
+    padding-left: 5px;
+}
+
+span.score {
+    width: 21%;
+    margin-left: -1px;
+    padding: 1px 10px 1px 5px;
+    border-radius: 2px;
+    text-align: right;
+}
+
+.beta {
+    margin: auto;
+    text-align: center;
+    font-size: 0.7em;
+}
+
+.arena_text.beta {
+    padding-top: 325px;
+    width: 75%;
+}
+
+</style>
+{% endblock %}
+{% block script %}
+<script>
+    $(document).ready(function () {
+        var difficulty          = {{ difficulty }};
+        if (difficulty > 15) {
+            window.location.replace( "{{ url_for('leaderboards', difficulty=15) }}" );
+        }
+        
+        var leaderboard = JSON.parse({{ halloffame | tojson | safe }});
+        var today       = new Date();
+        var cols        = ['day', 'week', 'month'];
+        
+        
+        $.each(leaderboard, function(i, val) {
+            $("ul.leaderboard").append("<li 'data-content'= '' id='"+val['game_id']+"' class='"+val['game_class']+"' title='Open game'>" +
+                                "<span class='nickname arena_text'>"+escapeHtml(val['nickname'])+"</span>" +
+                                "<span class='score arena_text'>"+val['score']+"</span>" +
+                              "</li>")
+             $("li:nth-child("+i+")").attr('data-content', '\xa0'+(i-1).toString());
+            placement = i.toString();
+            if (i < 10) {
+                placement = '\xa0'+i.toString();
+            }
+            $("li:last-child").attr('data-content', placement);
+       })
+
+        $('.leaderboard li').on('click', function() {
+            game_id = $(this).attr('id');
+            window.location.replace( "{{ url_for('result', game_id=game_id) }}" + game_id);
+        });
+    })
+</script>
+{% endblock %}
+{% block content %}
+    <div id="presentation_container">
+        <h2 class="arena_text" id="header1">HALL OF FAME</h2>
+        <div id="hero">
+            <div class="portrait"></div>
+            <div class="frame"></div>
+        </div>
+        {% if difficulty == '0' %}
+            {% set mode = 'Overall' %}
+        {% elif difficulty == '3' %}
+            {% set mode = 'Very Hard' %}
+        {% elif difficulty == '5' %}
+            {% set mode = 'Hard' %}
+        {% elif difficulty == '7' %}
+            {% set mode = 'Normal' %}
+        {% elif difficulty == '10' %}
+            {% set mode = 'Easy' %}
+        {% else %}
+            {% set mode = 'Custom' %}
+        {% endif %}
+        <h2 class="arena_text" id="header2">Alltime - {{ mode }} </h2>
+        <div class="arena_text" id="info">
+           <table id="score_table">
+                <tr class="header">
+                    <th>Click on an entry to get draft breakdown</th>
+                </tr>
+                <tr class="boards">
+                    <td>
+                        <ul class='leaderboard'>
+                        </ul>
+                    </td>
+                </tr>
+            </table>
+            <div class="arena_text beta">*The scores will be wiped when the beta ends</div>
+        </div>
+    </div>
+{% endblock %}
